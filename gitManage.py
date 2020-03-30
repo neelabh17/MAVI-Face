@@ -1,6 +1,6 @@
 import os
 def spacer():
-    print("##################################################")
+    print("##################################################ok")
 print("Welcome to the Github Updater Program\nPlease Select:\n\n1: Make temp folder with MAVI-Face Mounted\n2: Delete temp folder\n3: Upload changes to Github\n4: Get Changes from Github")
 n=int(input())
 if(n==1): #for Make temp folder with MAVI-Face Mounted
