@@ -1,4 +1,25 @@
 import os
+
+
+filer=open("gitToken.txt")
+f=filer.readline()
+gitToken=f.strip()
+filer.close()
+print("Current gitToken is :{}\n".format(gitToken))
+a=int(input("1: New token\n2: Same old one\n"))
+if(a==1):
+    gitToken=input("Enter new Token")
+    filer=open("gitToken.txt","w")
+    filer.write(gitToken)
+    filer.close()
+else:
+    filer=open("gitToken.txt")
+    f=filer.readline()
+    gitToken=f.strip()
+    filer.close()
+
+
+
 def spacer():
     print("##################################################")
 print("Welcome to the Github Updater Program\nPlease Select:\n\n1: Make temp folder with MAVI-Face Mounted\n2: Delete temp folder\n3: Upload changes to Github\n4: Get Changes from Github")
@@ -18,7 +39,7 @@ if(n==1): #for Make temp folder with MAVI-Face Mounted
         print("Directory Made")
         spacer()
         
-        os.system("! git clone \'https://ba013c1f5d1614119f921cb9933363f8793fa61e@github.com/neelabh17/MAVI-Face.git\' temp")
+        os.system("! git clone \'https://"+gitToken+"@github.com/neelabh17/MAVI-Face.git\' temp")
         print("MAVI-Face.git Cloned")
     else:
         print("The temp folder already exists")
@@ -56,7 +77,7 @@ elif(n==3):#Upload changes to Github
         print("Directory Made")
         spacer()
         
-        os.system("! git clone \'https://ba013c1f5d1614119f921cb9933363f8793fa61e@github.com/neelabh17/MAVI-Face.git\' temp")
+        os.system("! git clone \'https://"+gitToken+"@github.com/neelabh17/MAVI-Face.git\' temp")
         print("MAVI-Face.git Cloned")
 
         print("The temp folder has been set up")
@@ -108,7 +129,7 @@ elif(n==3):#Upload changes to Github
         print("Directory Made")
         spacer()
         
-        os.system("! git clone \'https://ba013c1f5d1614119f921cb9933363f8793fa61e@github.com/neelabh17/MAVI-Face.git\' temp")
+        os.system("! git clone \'https://"+gitToken+"@github.com/neelabh17/MAVI-Face.git\' temp")
         print("MAVI-Face.git Cloned")
 
         print("The temp folder has been set up")
@@ -161,7 +182,7 @@ elif(n==4):#Get Changes from Github
         print("Directory Made")
         spacer()
         
-        os.system("! git clone \'https://ba013c1f5d1614119f921cb9933363f8793fa61e@github.com/neelabh17/MAVI-Face.git\' temp")
+        os.system("! git clone \'https://"+gitToken+"@github.com/neelabh17/MAVI-Face.git\' temp")
         print("MAVI-Face.git Cloned")
 
 

@@ -250,7 +250,7 @@ if __name__ == '__main__':
         landms = landms[:args.keep_top_k, :]
 
         dets = np.concatenate((dets, landms), axis=1)
-        img_raw=cv2.resize(img_raw,(383,512))
+        # img_raw=cv2.resize(img_raw,(383,512))
         # show image
         if args.save_image:
             for b in dets2:
