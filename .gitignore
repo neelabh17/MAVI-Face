@@ -1,1 +1,7 @@
 *.jpg
+errorAnal/**.jpg
+*.pth
+widerface_evaluate/**images/**.jpg
+widerface_evaluate/**imgResults/**.jpg
+widerface_evaluate/widerface_txt/**.txt
+data/**.jpg
