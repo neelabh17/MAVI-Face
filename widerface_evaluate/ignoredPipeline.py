@@ -338,8 +338,9 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
     totalFacesAnno=0
     i=0
     j=0
+    igl=[18,37,44,51,54,67,72,83,87,90,91,93,94,98,101,102,105,114,117,159,166,184,217,219,235,238,267,279,281,287,295,314,315,327,329,334,336,348]
+    # igl=[]
     ig=0
-    ignoreimgs=[18,37,44,51,54,67,72,83,87,90,91,93,94,98,101,102,105,114,117,159,166,184,217,219,235,238,267,279,281,287,295,314,315,327,329,334,336,348]
     isFirst=True
     for line in lines:
         # print("the line is"+line)
@@ -350,36 +351,42 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
                 isFirst=False
                 prevName=line[1:].strip()
             else:
-                if(ig-1 in )
-                #to besned for verification beacuse these have been accumulated from earlier iterations
-                gt_boxesToSend=np.array(gt_boxes.copy())
-                # f=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/widerface_evaluate/widerface_txt/"+prevName[:-4]+".txt","r")
-                f=open(pred+prevName[:-4]+".txt","r")
-                prevName=line[1:].strip()
-                lines2=f.readlines()
-                noPred=int(lines2[1])
-                predbox=[]
-                if(noPred>0):
-                    for line2 in lines2[2:]:
-                        line2=line2.split()
-                        labelpred=[float(x) for x in line2]
-                        predbox.append(labelpred)
+                if(ig-1 in igl ):
+                    print("ignoring {}".format(ig-1))
+                else:   
+                    #to besned for verification beacuse these have been accumulated from earlier iterations
+                    gt_boxesToSend=np.array(gt_boxes.copy())
+                    # f=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/widerface_evaluate/widerface_txt/"+prevName[:-4]+".txt","r")
+                    f=open(pred+prevName[:-4]+".txt","r")
+                    prevName=line[1:].strip()
+                    lines2=f.readlines()
+                    noPred=int(lines2[1])
+                    predbox=[]
+                    if(noPred>0):
+                        for line2 in lines2[2:]:
+                            line2=line2.split()
+                            labelpred=[float(x) for x in line2]
+                            predbox.append(labelpred)
+                            
+                        predbox=np.array(predbox)
+                    if(noPred>0 and gt_boxesToSend.shape[0]>0):
+                        ignore = np.zeros(gt_boxesToSend.shape[0])
+                        count_face+=len(gt_boxesToSend)
+                        print("--------------------{}-----------------------------------------".format(ig-1))
+                        print(predbox)
+                        print(gt_boxesToSend)
                         
-                    predbox=np.array(predbox)
-                if(noPred>0 and gt_boxesToSend.shape[0]>0):
-                    ignore = np.zeros(gt_boxesToSend.shape[0])
-                    count_face+=len(gt_boxesToSend)
-                    pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
-                    _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
-                    pr_curve += _img_pr_info
+                        pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
+                        _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
+                        pr_curve += _img_pr_info
 
-                f.close()
-                # print(noPred)
-                totalFacesAnno+=gt_boxesToSend.shape[0]
+                    f.close()
+                    # print(noPred)
+                    totalFacesAnno+=gt_boxesToSend.shape[0]
 
-                #finding the prediictoin data boxed
+                    #finding the prediictoin data boxed
                 gt_boxes=[]
-                # print(name)
+                    # print(name)
                 i+=1
             ig+=1
 
@@ -411,7 +418,7 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--pred', default="./widerface_txt/Resnet50_Final/")
+    parser.add_argument('-p', '--pred', default="./widerface_txt/Resnet50_epoch_28_noGrad_FT_Adam_lre3/")
     parser.add_argument('-g', '--gt', default='./ground_truth/')
 
     args = parser.parse_args()
@@ -420,7 +427,9 @@ if __name__ == '__main__':
     #doing this intentionally so that i dint have to inupt it every single time
     n=0
 
-    ious=[0.5+0.05*i for i in range(10)]
+    ious=[0.25+0.05*i for i in range(15)]
+    ious=list(map(lambda x: int(x*100),ious))
+    ious=list(map(lambda x: (x/100),ious))
     iouVsAP=[]
     for i in ious:
         # print(i)
@@ -428,7 +437,8 @@ if __name__ == '__main__':
         iouVsAP.append([i,neelEvaluation(args.pred,args.gt,i,n)])
     summer=0
 
-    a=open(args.pred+"resultsremoved.txt","w")
+    # a=open(args.pred+"resultsignored0.25.txt","w")
+    a=open(args.pred+"resultsignored0.25.txt","w")
     for itemer in iouVsAP:
 
         print(itemer)
@@ -437,11 +447,10 @@ if __name__ == '__main__':
         summer+=itemer[1]
 
     print("=================================================")
-    print("mAP is : " +str(summer/10))
-    a.write("===============================================\nmAP is : "+str(summer/10))
+    print("mAP is : " +str(summer/len(ious)))
+    a.write("===============================================\nmAP is : "+str(summer/len(ious)))
     a.close()
     # print(neelEvaluation(args.pred, args.gt,0.3))
-
 
 
 

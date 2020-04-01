@@ -84,7 +84,7 @@ elif(n==3):#Upload changes to Github
         print("Rippling changes to temp folder")
         spacer()
         
-        os.system("rsync -aP --exclude=\'/weights/*.pth\' --exclude=\'.git\' --exclude=\'widerface_evaluate/**images/**.jpg\' --exclude=\'widerface_evaluate/**imgResults/**.jpg\' --exclude=\'widerface_evaluate/**.txt\' --exclude=\'data/**.jpg\'  \'./Pytorch_Retinaface/\' \'./temp/\'")
+        os.system("rsync -aP --exclude \'/errorAnal/images_for_comparision/*.jpg\' --exclude=\'/weights/*.pth\' --exclude=\'.git\' --exclude=\'widerface_evaluate/**images/**.jpg\' --exclude=\'widerface_evaluate/**imgResults/**.jpg\' --exclude=\'widerface_evaluate/**.txt\' --exclude=\'data/**.jpg\'  \'./Pytorch_Retinaface/\' \'./temp/\'")
         print("Changing directory into temp")
         spacer()
         
@@ -137,7 +137,7 @@ elif(n==3):#Upload changes to Github
         print("Rippling changes to temp folder")
         spacer()
         
-        os.system("rsync -aP --exclude=\'/weights/*.pth\' --exclude=\'.git\' --exclude=\'widerface_evaluate/**images/**.jpg\' --exclude=\'widerface_evaluate/**imgResults/**.jpg\' --exclude=\'widerface_evaluate/**.txt\' --exclude=\'data/**.jpg\'  \'./Pytorch_Retinaface/\' \'./temp/\'")
+        os.system("rsync -aP --exclude \'/errorAnal/images_for_comparision/*.jpg\' --exclude=\'/weights/*.pth\' --exclude=\'.git\' --exclude=\'widerface_evaluate/**images/**.jpg\' --exclude=\'widerface_evaluate/**imgResults/**.jpg\' --exclude=\'widerface_evaluate/**.txt\' --exclude=\'data/**.jpg\'  \'./Pytorch_Retinaface/\' \'./temp/\'")
         print("Changing directory into temp")
         spacer()
         
