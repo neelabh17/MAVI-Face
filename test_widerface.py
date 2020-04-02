@@ -86,29 +86,22 @@ if __name__ == '__main__':
     net = net.to(device)
 
     # testing dataset
-    testset_folder = args.dataset_folder
-    testset_list = args.dataset_folder[:-7] + "wider_val.txt"
+    testset_folder = args.dataset_folder#basically this is "./data/widerface/val/images/"
+    # i have much better way to write this
+    # testset_list = args.dataset_folder[:-7] + "wider_val.txt"
+    testset_list = args.dataset_folder.strip("images/") + "wider_val.txt"
 
-    with open(testset_list, 'r') as fr:
-        test_dataset = fr.read().strip()
-    num_images = len(test_dataset)
-    num_images = len(test_dataset)
-    neelTestDataset=[]
-    # my code to implement spaced named files
-    for line in open(testset_list, 'r'):
-        line = line.strip()
-        
-        # for njis dataset
-        neelTestDataset.append(line)
 
-        #for widerface dataset
-        # neelTestDataset.append(line[1:])
+    #importing data from pickle file
+    import pickle
+    dataFile=open(testset_folder.strip("images/")+"label.pickle","rb")
+    neelTestDataset=pickle.load(dataFile)
+    dataFile.close()
 
-    print(neelTestDataset)
- 
 
     _t = {'forward_pass': Timer(), 'misc': Timer()}
-
+    
+    testResults={}
     # testing begin
     for i, img_name in enumerate(neelTestDataset):
         image_path = testset_folder + img_name
@@ -159,31 +152,33 @@ if __name__ == '__main__':
         landms = landms * scale1 / resize
         landms = landms.cpu().numpy()
 
-        # ignore low scores
-        inds = np.where(scores > args.confidence_threshold)[0]
-        boxes = boxes[inds]
-        landms = landms[inds]
-        scores = scores[inds]
+        imgResultDict={"conf":scores,""}
+        #----------------------------------removing this section--------------------------
+        # # ignore low scores
+        # inds = np.where(scores > args.confidence_threshold)[0]
+        # boxes = boxes[inds]
+        # landms = landms[inds]
+        # scores = scores[inds]
 
-        # keep top-K before NMS
-        order = scores.argsort()[::-1]
-        # order = scores.argsort()[::-1][:args.top_k]
-        boxes = boxes[order]
-        landms = landms[order]
-        scores = scores[order]
+        # # keep top-K before NMS
+        # order = scores.argsort()[::-1]
+        # # order = scores.argsort()[::-1][:args.top_k]
+        # boxes = boxes[order]
+        # landms = landms[order]
+        # scores = scores[order]
 
-        # do NMS
-        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        keep = py_cpu_nms(dets, args.nms_threshold)
-        # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
-        dets = dets[keep, :]
-        landms = landms[keep]
+        # # do NMS
+        # dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
+        # keep = py_cpu_nms(dets, args.nms_threshold)
+        # # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
+        # dets = dets[keep, :]
+        # landms = landms[keep]
 
-        # keep top-K faster NMS
-        # dets = dets[:args.keep_top_k, :]
-        # landms = landms[:args.keep_top_k, :]
+        # # keep top-K faster NMS
+        # # dets = dets[:args.keep_top_k, :]
+        # # landms = landms[:args.keep_top_k, :]
 
-        dets = np.concatenate((dets, landms), axis=1)
+        # dets = np.concatenate((dets, landms), axis=1)
         _t['misc'].toc()
 
         # --------------------------------------------------------------------
