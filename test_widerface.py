@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     #importing data from pickle file
     import pickle
-    dataFile=open(testset_folder.strip("images/")+"label.pickle","rb")
+    dataFile=open(testset_folder.strip("images/")+"/label.pickle","rb")
     neelTestDataset=pickle.load(dataFile)
     dataFile.close()
 
@@ -169,9 +169,9 @@ if __name__ == '__main__':
     pickle.dump(testResults,dataFile)
     dataFile.close()
     #now calling evaluation simultaneously
-    os.chdir("./widerface_evaluate/")
-    str="./widerface_txt/"+args.trained_model.strip(".pth").strip("/weights/")+"/"
-    os.system("python neelPipelineEvaluation2.py --pred \'{}\'".format(str))
+    # os.chdir("./widerface_evaluate/")
+    # str="./widerface_txt/"+args.trained_model.strip(".pth").strip("/weights/")+"/"
+    # os.system("python neelPipelineEvaluation2.py --pred \'{}\'".format(str))
     
 
 
