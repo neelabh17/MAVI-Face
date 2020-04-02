@@ -97,7 +97,7 @@ if __name__ == '__main__':
     dataFile=open(testset_folder.strip("images/")+"/label.pickle","rb")
     neelTestDataset=pickle.load(dataFile)
     dataFile.close()
-
+    num_images = len(neelTestDataset)
 
     _t = {'forward_pass': Timer(), 'misc': Timer()}
     
