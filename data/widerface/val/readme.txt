@@ -1,10 +1,19 @@
 
-the pickle file contains the list of the annotations
+the pickle file contains the dictionary
 
-each index corresponds to a dictionary
 
-for example if u impor the list in a 
-then a[0] contains the dictopnary 
+how to load
 
-"FileName" and "Annotations"
-annotations is further a list
+a=open("label.pickle","rb")
+import pickle
+data=pickle.load(a)
+
+
+now 
+
+for a in data:
+	print(a) --------------->>>>>>>>>>> gives out the file path NJIS/imagexyz.jpg
+	print(data[a]) ------------------>>>>>>>>>>> gives a nX(4+ something dimentional for us only the first 4 are important)
+
+
+so you basicaly get it right no
