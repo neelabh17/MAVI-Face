@@ -1,5 +1,5 @@
 
-file=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.txt","r")
+file=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/label.txt","r")
 lines=file.readlines()
 file.close()
 # ill like to do this my way now reallyyou should seee how i do this
@@ -27,6 +27,6 @@ while(i<lenOfFile):
     i=j
 
 import pickle
-filename=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.pickle","wb")
+filename=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/label.pickle","wb")
 pickle.dump(ll,filename)
 filename.close()
