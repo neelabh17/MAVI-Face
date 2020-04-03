@@ -56,7 +56,7 @@ def reductionProcedures(imgData):
     # landms = landms[:args.keep_top_k, :]
 
     dets = np.concatenate((dets, landms), axis=1)
-    return dets, landms[...,:4]
+    return dets, boxes
 
 
 

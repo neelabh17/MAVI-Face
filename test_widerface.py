@@ -160,8 +160,9 @@ if __name__ == '__main__':
         print(boxes.shape)
 
         ##here boxes are giving us the real values x1,y1,x2,y2 we have to converet them into x1,y1,w,h
-        boxes.T[3]-=boxes.T[1]
-        boxes.T[4]-=boxes.T[2]
+        boxes[..., 2]-=boxes[..., 0]
+        boxes[..., 3]-=boxes[..., 1]
+        
         imgResultDict={"conf":scores,"landms":landms,"loc":boxes}
         # adding it to the main results pickle file
 

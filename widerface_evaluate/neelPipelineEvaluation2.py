@@ -13,7 +13,7 @@ import numpy as np
 from scipy.io import loadmat
 from bbox import bbox_overlaps
 from IPython import embed
-from widerface_evaluate.evalResults import readData, reductionProcedures
+from utils.evalResults import readData, reductionProcedures
 
 
 parser = argparse.ArgumentParser(description='Retinaface')
@@ -96,7 +96,14 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
 
     for fileName in gts:
         gt_boxesToSend=gts[fileName]
-        
+        pred_data=preds[fileName]
+        dets,pred_boxes=reductionProcedures(pred_data)
+        if(pred_boxes.shape[0]>)0 and gt_boxesToSend.shape[0]>0):
+            ignore = np.zeros(gt_boxesToSend.shape[0])
+            count_face+=len(gt_boxesToSend)
+            pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
+            _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
+            pr_curve += _img_pr_info
     
 
     for line in lines:
