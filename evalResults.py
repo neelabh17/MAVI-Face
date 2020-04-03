@@ -41,11 +41,11 @@ def reductionProcedures(imgData):
     scores=imgData["conf"]
     boxes=imgData["loc"]
     landms=imgData["landms"]
-    # ignore low scores
-    inds = np.where(scores > args.confidence_threshold)[0]
-    boxes = boxes[inds]
-    landms = landms[inds]
-    scores = scores[inds]
+    # ignore low scores we are already getting low scores ignored
+    # inds = np.where(scores > args.confidence_threshold)[0]
+    # boxes = boxes[inds]
+    # landms = landms[inds]
+    # scores = scores[inds]
 
     # keep top-K before NMS
     order = scores.argsort()[::-1]

@@ -22,7 +22,7 @@ parser.add_argument('--origin_size', default=True, type=str, help='Whether use o
 parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold', default=0.02, type=float, help='confidence_threshold')
+parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
@@ -151,7 +151,14 @@ if __name__ == '__main__':
         scale1 = scale1.to(device)
         landms = landms * scale1 / resize
         landms = landms.cpu().numpy()
-        print(landms.shape)
+
+        # helps in significant reduction of saving space
+        inds = np.where(scores > args.confidence_threshold)[0]
+        boxes = boxes[inds]
+        landms = landms[inds]
+        scores = scores[inds]
+        print(boxes.shape)
+
         imgResultDict={"conf":scores,"landms":landms,"loc":boxes}
         # adding it to the main results pickle file
 
@@ -161,6 +168,7 @@ if __name__ == '__main__':
     #now saving the pickle file
 
 
+    #saving in widerface_txt folder
     save_name = args.save_folder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
     dirname = os.path.dirname(save_name)
     if not os.path.isdir(dirname):
@@ -168,6 +176,19 @@ if __name__ == '__main__':
     dataFile=open(save_name,"wb")
     pickle.dump(testResults,dataFile)
     dataFile.close()
+
+    #saving in evalData folder
+    save_name = "./evalData/"+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
+    dirname = os.path.dirname(save_name)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+    dataFile=open(save_name,"wb")
+    pickle.dump(testResults,dataFile)
+    dataFile.close()
+
+
+
+    print("Evaluation is done and evaluation file is saves as outResults.pickle in the respective folder of the model")
     #now calling evaluation simultaneously
     # os.chdir("./widerface_evaluate/")
     # str="./widerface_txt/"+args.trained_model.strip(".pth").strip("/weights/")+"/"
