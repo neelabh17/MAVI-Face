@@ -70,6 +70,22 @@ def neel_image_eval(pred, gt, ignore, iou_thresh):
         pred_recall[h] = len(r_keep_index)
     return pred_recall, proposal_list
 
+def img_pr_info(thresh_num, pred_info, proposal_list, pred_recall):
+    pr_info = np.zeros((thresh_num, 2)).astype('float')
+    for t in range(thresh_num):
+
+        thresh = 1 - (t+1)/thresh_num
+        r_index = np.where(pred_info[:, 4] >= thresh)[0]
+        if len(r_index) == 0:
+            pr_info[t, 0] = 0
+            pr_info[t, 1] = 0
+        else:
+            r_index = r_index[-1]
+            p_index = np.where(proposal_list[:r_index+1] == 1)[0]
+            pr_info[t, 0] = len(p_index)
+            pr_info[t, 1] = pred_recall[r_index]
+    return pr_info
+
 def neelEvaluation(pred, gt_path, iou_thresh,n):
     count_face = 0
     thresh_num = 1000
@@ -97,8 +113,8 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
     for fileName in gts:
         gt_boxesToSend=gts[fileName]
         pred_data=preds[fileName]
-        dets,pred_boxes=reductionProcedures(pred_data)
-        if(pred_boxes.shape[0]>)0 and gt_boxesToSend.shape[0]>0):
+        dets,predbox=reductionProcedures(pred_data)
+        if(predbox.shape[0]>0 and gt_boxesToSend.shape[0]>0):
             ignore = np.zeros(gt_boxesToSend.shape[0])
             count_face+=len(gt_boxesToSend)
             pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
