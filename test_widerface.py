@@ -165,7 +165,7 @@ if __name__ == '__main__':
     dirname = os.path.dirname(save_name)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
-    dataFile=open(save_name,"rb")
+    dataFile=open(save_name,"wb")
     pickle.dump(testResults,dataFile)
     dataFile.close()
     #now calling evaluation simultaneously
