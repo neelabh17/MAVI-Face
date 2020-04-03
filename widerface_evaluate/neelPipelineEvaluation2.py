@@ -86,6 +86,33 @@ def img_pr_info(thresh_num, pred_info, proposal_list, pred_recall):
             pr_info[t, 1] = pred_recall[r_index]
     return pr_info
 
+def dataset_pr_info(thresh_num, pr_curve, count_face):
+    _pr_curve = np.zeros((thresh_num, 2))
+    for i in range(thresh_num):
+        _pr_curve[i, 0] = pr_curve[i, 1] / pr_curve[i, 0]
+        _pr_curve[i, 1] = pr_curve[i, 1] / count_face
+    return _pr_curve
+
+
+def voc_ap(rec, prec):
+
+    # correct AP calculation
+    # first append sentinel values at the end
+    mrec = np.concatenate(([0.], rec, [1.]))
+    mpre = np.concatenate(([0.], prec, [0.]))
+
+    # compute the precision envelope
+    for i in range(mpre.size - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+    # to calculate area under PR curve, look for points
+    # where X axis (recall) changes value
+    i = np.where(mrec[1:] != mrec[:-1])[0]
+
+    # and sum (\Delta recall) * prec
+    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap
+
 def neelEvaluation(pred, gt_path, iou_thresh,n):
     count_face = 0
     thresh_num = 1000
@@ -120,58 +147,6 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
             pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
             _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
             pr_curve += _img_pr_info
-    
-
-    for line in lines:
-        # print("the line is"+line)
-        line=line.strip()
-        if(line.startswith("#")):
-            j+=1
-            if isFirst:
-                isFirst=False
-                prevName=line[1:].strip()
-            else:
-                #to besned for verification beacuse these have been accumulated from earlier iterations
-                gt_boxesToSend=np.array(gt_boxes.copy())
-                # f=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/widerface_evaluate/widerface_txt/"+prevName[:-4]+".txt","r")
-                f=open(pred+prevName[:-4]+".txt","r")
-                prevName=line[1:].strip()
-                lines2=f.readlines()
-                noPred=int(lines2[1])
-                predbox=[]
-                if(noPred>0):
-                    for line2 in lines2[2:]:
-                        line2=line2.split()
-                        labelpred=[float(x) for x in line2]
-                        predbox.append(labelpred)
-                        
-                    predbox=np.array(predbox)
-                if(noPred>0 and gt_boxesToSend.shape[0]>0):
-                    ignore = np.zeros(gt_boxesToSend.shape[0])
-                    count_face+=len(gt_boxesToSend)
-                    pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
-                    _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
-                    pr_curve += _img_pr_info
-
-                f.close()
-                # print(noPred)
-                totalFacesAnno+=gt_boxesToSend.shape[0]
-
-                #finding the prediictoin data boxed
-                gt_boxes=[]
-                # print(name)
-                i+=1
-            ig+=1
-
-        else:
-            line=line.split(" ")
-            label=[float(x) for x in line]
-            # print("printing the labels")
-            # print(label)
-            gt_boxes.append(label[:4])
-
-    # print(i,j,totalFacesAnno)
-    a.close()
 
     pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
 
