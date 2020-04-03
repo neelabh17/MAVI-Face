@@ -82,12 +82,7 @@ if __name__=="__main__":
         image_path = testset_folder + img_name
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
-
         dets=reductionProcedures(outData[img_name])
-
-        
-
-        
         if args.save_image:
             for b in dets:
                 if b[4] < args.vis_thres:
