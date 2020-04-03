@@ -41,7 +41,7 @@ def reductionProcedures(imgData):
     scores=imgData["conf"]
     boxes=imgData["loc"]
     landms=imgData["landms"]
-    # ignore low scores we are already getting low scores ignored
+    # # ignore low scores
     # inds = np.where(scores > args.confidence_threshold)[0]
     # boxes = boxes[inds]
     # landms = landms[inds]
@@ -74,7 +74,6 @@ if __name__=="__main__":
 
     fileLocation=args.save_folder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
     outData=readData(fileLocation)
-
 
     testset_folder = args.dataset_folder#basically this is "./data/widerface/val/images/"
 
@@ -112,4 +111,3 @@ if __name__=="__main__":
     os.chdir("./widerface_evaluate/")
     str="./widerface_txt/"+args.trained_model.strip(".pth").strip("/weights/")+"/"
     os.system("python neelPipelineEvaluation2.py --pred \'{}\'".format(str))
-    
