@@ -31,6 +31,44 @@ parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
 parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
 args = parser.parse_args()
+def neel_image_eval(pred, gt, ignore, iou_thresh):
+    """ single image evaluation
+    pred: Nx5
+    gt: Nx4
+    ignore:
+    """
+    # print(pred.shape,gt.shape)
+    _pred = pred.copy()
+    _gt = gt.copy()
+    pred_recall = np.zeros(_pred.shape[0])
+    recall_list = np.zeros(_gt.shape[0])
+    proposal_list = np.ones(_pred.shape[0])
+
+    _pred[:, 2] = _pred[:, 2] + _pred[:, 0]
+    _pred[:, 3] = _pred[:, 3] + _pred[:, 1]
+    _gt[:, 2] = _gt[:, 2] + _gt[:, 0]
+    _gt[:, 3] = _gt[:, 3] + _gt[:, 1]
+# 
+    overlaps = bbox_overlaps(_pred[:, :4], _gt)
+    # print(overlaps.shape)
+    # input()
+
+    for h in range(_pred.shape[0]):
+
+        gt_overlap = overlaps[h]
+        max_overlap, max_idx = gt_overlap.max(), gt_overlap.argmax()
+        if max_overlap >= iou_thresh:
+            # if ignore[max_idx] == 0:
+            # my change made
+            if False:
+                recall_list[max_idx] = -1
+                proposal_list[h] = -1
+            elif recall_list[max_idx] == 0:
+                recall_list[max_idx] = 1
+
+        r_keep_index = np.where(recall_list == 1)[0]
+        pred_recall[h] = len(r_keep_index)
+    return pred_recall, proposal_list
 
 def neelEvaluation(pred, gt_path, iou_thresh,n):
     count_face = 0
@@ -56,6 +94,9 @@ def neelEvaluation(pred, gt_path, iou_thresh,n):
     fileName=evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
     preds=readData(fileName)
 
+    for fileName in gts:
+        gt_boxesToSend=gts[fileName]
+        
     
 
     for line in lines:
