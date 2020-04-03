@@ -15,16 +15,16 @@ def readData(fileLocation):
     # data[<filename>][<"loc">/<"landms">/<"conf">]
     return data
 
-def reductionProcedures(imgData,nms_threshold):
+def reductionProcedures(imgData,nms_threshold,confidence_threshold):
     #imgData["loc"/"conf"/"landms"]
     scores=imgData["conf"]
     boxes=imgData["loc"]
     landms=imgData["landms"]
     # # ignore low scores
-    # inds = np.where(scores > args.confidence_threshold)[0]
-    # boxes = boxes[inds]
-    # landms = landms[inds]
-    # scores = scores[inds]
+    inds = np.where(scores > confidence_threshold)[0]
+    boxes = boxes[inds]
+    landms = landms[inds]
+    scores = scores[inds]
 
     # keep top-K before NMS
     order = scores.argsort()[::-1]

@@ -146,7 +146,7 @@ def neelEvaluation(iou_thresh,n):
         gt_boxesToSend=gt_boxesToSend.astype(float)
 
         pred_data=preds[fileName]
-        dets,predbox=reductionProcedures(pred_data,args.nms_threshold)
+        dets,predbox=reductionProcedures(pred_data,args.nms_threshold,args.confidence_threshold)
         if(predbox.shape[0]>0 and gt_boxesToSend.shape[0]>0):
             ignore = np.zeros(gt_boxesToSend.shape[0])
             count_face+=len(gt_boxesToSend)
