@@ -158,6 +158,7 @@ if __name__ == '__main__':
         landms = landms[inds]
         scores = scores[inds]
         print(boxes.shape)
+        boxes=boxes.astype(int)
 
         ##here boxes are giving us the real values x1,y1,x2,y2 we have to converet them into x1,y1,w,h
         boxes[..., 2]-=boxes[..., 0]

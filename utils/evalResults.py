@@ -2,22 +2,10 @@ from __future__ import print_function
 import os
 import cv2
 import pickle
-import argparse
 import numpy as np
+import sys
 from utils.nms.py_cpu_nms import py_cpu_nms
 
-parser = argparse.ArgumentParser(description='Retinaface')
-parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.pth',
-                    type=str, help='Trained state_dict file path to open')
-parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
-parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold', default=0.02, type=float, help='confidence_threshold')
-parser.add_argument('--top_k', default=5000, type=int, help='top_k')
-parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
-parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
-parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
-parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
-args = parser.parse_args()
 
 
 def readData(fileLocation):
@@ -27,7 +15,7 @@ def readData(fileLocation):
     # data[<filename>][<"loc">/<"landms">/<"conf">]
     return data
 
-def reductionProcedures(imgData):
+def reductionProcedures(imgData,nms_threshold):
     #imgData["loc"/"conf"/"landms"]
     scores=imgData["conf"]
     boxes=imgData["loc"]
@@ -47,7 +35,7 @@ def reductionProcedures(imgData):
 
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-    keep = py_cpu_nms(dets, args.nms_threshold)
+    keep = py_cpu_nms(dets, nms_threshold)
     # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
     dets = dets[keep, :]
     landms = landms[keep]
@@ -56,7 +44,7 @@ def reductionProcedures(imgData):
     # landms = landms[:args.keep_top_k, :]
 
     dets = np.concatenate((dets, landms), axis=1)
-    return dets, boxes
+    return dets, dets[..., :5]
 
 
 
