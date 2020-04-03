@@ -17,9 +17,15 @@ def readData(fileLocation):
 
 def reductionProcedures(imgData,nms_threshold,confidence_threshold):
     #imgData["loc"/"conf"/"landms"]
-    scores=imgData["conf"]
-    boxes=imgData["loc"]
-    landms=imgData["landms"]
+    scores=np.array(imgData["conf"])
+    boxes=np.array(imgData["loc"])
+    landms=np.array(imgData["landms"])
+    #converting boxed to x1,y1,x2,y2 format
+    boxes[...,2]+=boxes[...,0]
+    boxes[...,3]+=boxes[...,1]
+
+    # print(boxes.shape,landms.shape,scores.shape)
+    # print(scores)
     # # ignore low scores
     inds = np.where(scores > confidence_threshold)[0]
     boxes = boxes[inds]
@@ -44,8 +50,14 @@ def reductionProcedures(imgData,nms_threshold,confidence_threshold):
     # landms = landms[:args.keep_top_k, :]
 
     dets = np.concatenate((dets, landms), axis=1)
-    return dets, dets[..., :5]
-
+    #converting back to x1 y1 x2 y2 for dets to do nms but preds are still in x y w h format
+    preds=dets[..., :5]
+    temp=dets[...,:4].astype(int)
+    preds[...,:4]=temp
+    preds[...,2]-=preds[...,0]
+    preds[...,3]-=preds[...,1]
+    
+    return dets, preds
 
 
 

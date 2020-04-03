@@ -161,6 +161,12 @@ def neelEvaluation(iou_thresh,n):
     print(propose.shape,recall.shape)
     ap = voc_ap(recall, propose)
     aps.append(ap)
+
+    evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
+    a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/pr_{}.pickle".format(iou_thresh),"wb")
+    a.close()
+
+    
     print("==================== Results ====================")
     print("Easy   Val AP: {}".format(aps[0]))
     # print("Medium Val AP: {}".format(aps[1]))
@@ -175,7 +181,8 @@ if __name__ == '__main__':
     #doing this intentionally so that i dint have to inupt it every single time
     n=0
 
-    ious=[0.5+0.05*i for i in range(10)]
+    ious=[0.25+int(0.05*i*100)/100 for i in range(15)]
+    # ious=[0.5+int(0.05*i*100)/100 for i in range(10)]
     iouVsAP=[]
     for i in ious:
         # print(i)
@@ -195,6 +202,13 @@ if __name__ == '__main__':
     print("mAP is : " +str(summer/len(ious)))
     a.write("===============================================\nmAP is : "+str(summer/len(ious)))
     a.close()
+
+    a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/results.pickle","wb")
+    import pickle
+    pickle.dump(iouVsAP,a)
+    a.close()
+    
+
     # print(neelEvaluation(args.pred, args.gt,0.3))
 
 

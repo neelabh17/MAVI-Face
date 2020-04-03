@@ -152,14 +152,13 @@ if __name__ == '__main__':
         landms = landms * scale1 / resize
         landms = landms.cpu().numpy()
 
+        # print(boxes.shape,landms.shape,scores.shape)
         # helps in significant reduction of saving space
         inds = np.where(scores > args.confidence_threshold)[0]
         boxes = boxes[inds]
         landms = landms[inds]
         scores = scores[inds]
-        print(boxes.shape)
-        boxes=boxes.astype(int)
-
+             
         ##here boxes are giving us the real values x1,y1,x2,y2 we have to converet them into x1,y1,w,h
         boxes[..., 2]-=boxes[..., 0]
         boxes[..., 3]-=boxes[..., 1]
