@@ -3,4 +3,4 @@ errorAnal/**.jpg
 widerface_evaluate/**images/**.jpg
 widerface_evaluate/**imgResults/**.jpg
 widerface_evaluate/
-data/**.jpg
+data/*.jpg
