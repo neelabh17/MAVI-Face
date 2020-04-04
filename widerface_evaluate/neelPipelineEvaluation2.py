@@ -155,15 +155,21 @@ def neelEvaluation(iou_thresh,n):
             pr_curve += _img_pr_info
 
     pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
-    print(pr_curve.shape)
+    # print(pr_curve.shape)
+    for xe in pr_curve:
+        if(np.isnan(xe[0])):
+            xe[0]=1
     propose = pr_curve[:, 0]
     recall = pr_curve[:, 1]
-    print(propose.shape,recall.shape)
+    # print(pr_curve)
+    # print(propose.shape,recall.shape)
+    # input()
     ap = voc_ap(recall, propose)
     aps.append(ap)
 
     evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
-    a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/pr_{}.pickle".format(iou_thresh),"wb")
+    a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/pr{}.pickle".format(int(iou_thresh*100)),"wb")
+    pickle.dump(pr_curve,a)
     a.close()
 
     
