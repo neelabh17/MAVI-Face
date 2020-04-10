@@ -164,6 +164,9 @@ def neelEvaluation(iou_thresh,n):
     # print(pr_curve)
     # print(propose.shape,recall.shape)
     # input()
+    print(recall)
+    print(propose)
+    # input()
     ap = voc_ap(recall, propose)
     aps.append(ap)
 
