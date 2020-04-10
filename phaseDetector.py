@@ -144,6 +144,7 @@ if __name__ == '__main__':
         boxes = boxes.cpu().numpy()
         scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
         print(max(scores))
+        landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
 
 
         # print(landms)
@@ -155,18 +156,20 @@ if __name__ == '__main__':
         landms = landms * scale1 / resize
         landms = landms.cpu().numpy()
         print(boxes.shape,scores.shape,landms.shape)
-        # dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        # dets = np.concatenate((dets, landms.squeeze()), axis=1)
-        # saveImg("a1.jpg",img_raw.copy(),dets)
+        #saving
+        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
+        dets = np.concatenate((dets, landms.squeeze()), axis=1)
+        saveImg("a1.jpg",img_raw.copy(),dets)
         
         # ignore low scores
         inds = np.where(scores > args.confidence_threshold)[0]
         boxes = boxes[inds]
         landms = landms[inds]
         scores = scores[inds]
-        # dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        # dets = np.concatenate((dets, landms), axis=1)
-        # saveImg("a2.jpg",img_raw.copy(),dets)
+        #saving
+        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
+        dets = np.concatenate((dets, landms), axis=1)
+        saveImg("a2.jpg",img_raw.copy(),dets)
 
         # keep top-K before NMS
         order = scores.argsort()[::-1][:args.top_k]
@@ -180,9 +183,10 @@ if __name__ == '__main__':
         # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
         dets = dets[keep, :]
         landms = landms[keep]
-        # dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        # dets = np.concatenate((dets, landms), axis=1)
-        # saveImg("a3.jpg",img_raw.copy(),dets)
+        #saving
+        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
+        dets = np.concatenate((dets, landms), axis=1)
+        saveImg("a3.jpg",img_raw.copy(),dets)
 
         # keep top-K faster NMS
         dets = dets[:args.keep_top_k, :]
