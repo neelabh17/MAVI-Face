@@ -244,7 +244,7 @@ def neelEvaluation(iou_thresh,n):
     pr_data_collector=np.array(pr_data_collector).reshape((-1,2))
     my_pr_curve=givePRCurve(pr_data_collector,count_face)
 
-    print("my ap is coming out to be",voc_ap(my_pr_curve[...,0],my_pr_curve[...,1]))
+    print("my ap is coming out to be",voc_ap(my_pr_curve[...,1],my_pr_curve[...,0]))
     
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
