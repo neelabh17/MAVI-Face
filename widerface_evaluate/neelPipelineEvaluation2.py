@@ -120,6 +120,75 @@ def voc_ap(rec, prec):
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
+def getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh):
+    """ single image evaluation
+    pred: Nx5
+    gt: Nx4
+    ignore:
+    """
+    # print("shapess are of pred and gt",pred.shape,gt.shape)
+    # print(type(pred),pred)
+    # print("--------------------------------",gt)
+    pred=pred.astype(float)
+    gt=gt.astype(float)
+    _pred = pred.copy()
+    _gt = gt.copy()
+    ynsList = np.zeros((_gt.shape[0],2))
+    ynsList[...,1]=pred[...,4]
+    print("The confs list is \n",pred[...,4] )
+    print("The yns list is \n",ynsList )
+
+
+    
+
+
+    _pred[:, 2] = _pred[:, 2] + _pred[:, 0]
+    _pred[:, 3] = _pred[:, 3] + _pred[:, 1]
+    _gt[:, 2] = _gt[:, 2] + _gt[:, 0]
+    _gt[:, 3] = _gt[:, 3] + _gt[:, 1]
+
+    overlaps = bbox_overlaps(_pred[:, :4], _gt)
+   
+
+    for h in range(_pred.shape[0]):
+
+        gt_overlap = overlaps[h]
+        max_overlap, max_idx = gt_overlap.max(), gt_overlap.argmax()
+        if max_overlap >= iou_thresh:
+            # if ignore[max_idx] == 0:
+            # my change made
+            if False:
+                ynsList[max_idx][0] = -1
+            elif ynsList[max_idx][0] == 0:
+                ynsList[max_idx][0] = 1
+
+    return ynsList
+
+def givePRCurve(pr_data_collector,count_face):
+    # pr_data_collector= nx2
+    # sort the data according to scores
+    pr_data_collector=np.array(list(pr_data_collector).sort(key= lambda x:x[1],reverse=True))
+
+    # now looping over it 
+    tp=0
+    fp=0
+    my_pr_curve=np.zeros(pr_data_collector.shape)
+    
+    for i, prPoint in enumerate(my_pr_curve):
+        if(pr_data_collector[i][0]==1):
+            tp+=1
+        elif(pr_data_collector[i][0]==0):
+            fp+=1
+        else:
+            input("An error occured")
+        
+        prPoint[0]=(tp/(tp+fp))# this is precision
+        prPoint[1]=tp/count_face
+
+    return my_pr_curve
+
+
+
 def neelEvaluation(iou_thresh,n):
     count_face = 0
     thresh_num = 1000
@@ -139,8 +208,14 @@ def neelEvaluation(iou_thresh,n):
     fileName=evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
     preds=readData(fileName)
 
+    #my addition for pr implementation acccording to jonathan huis article
+    pr_data_collector=[]
+
+
     for i,fileName in enumerate(gts):
         print(i,fileName)
+
+        #because ppickle file doesnt load files in form of numpy stuff
         gt_boxesToSend=np.array(gts[fileName])
         gt_boxesToSend=gt_boxesToSend[...,:4]
         gt_boxesToSend=gt_boxesToSend.astype(float)
@@ -154,19 +229,31 @@ def neelEvaluation(iou_thresh,n):
             _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
             pr_curve += _img_pr_info
 
+            #my addition for pr implementation acccording to jonathan huis article
+            yns_List=getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh)
+            pr_data_collector.append(yns_List)
+        
+        #i am thinking of adding the other cases as well when no gt boxes and whn no pred boxes ok well do that in next version
+
+
+            
+    
     pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
-    # print(pr_curve.shape)
+
+    #my addition for pr implementation acccording to jonathan huis article
+    pr_data_collector=np.array(pr_data_collector).reshape((-1,2))
+    my_pr_curve=givePRCurve(pr_data_collector,count_face)
+
+    print("my ap is coming out to be",voc_ap(my_pr_curve[...,0],my_pr_curve[...,1]))
+    
+    #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
         if(np.isnan(xe[0])):
             xe[0]=1
     propose = pr_curve[:, 0]
     recall = pr_curve[:, 1]
-    # print(pr_curve)
-    # print(propose.shape,recall.shape)
-    # input()
-    print(recall)
-    print(propose)
-    # input()
+    
+
     ap = voc_ap(recall, propose)
     aps.append(ap)
 
