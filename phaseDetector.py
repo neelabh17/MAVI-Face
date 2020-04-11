@@ -184,7 +184,6 @@ if __name__ == '__main__':
         dets = dets[keep, :]
         landms = landms[keep]
         #saving
-        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
         dets = np.concatenate((dets, landms), axis=1)
         saveImg("a3.jpg",img_raw.copy(),dets)
 
