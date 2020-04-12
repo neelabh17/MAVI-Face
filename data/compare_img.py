@@ -5,8 +5,9 @@ import cv2
 import os
 from utils.evalResults import readData, reductionProcedures
 def saveImages(trained_model_name,nms_threshold,vis_thresh):
-    # load val dataset ground truth
+    # load dataset ground truth
     fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.pickle"
+    # fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/label.pickle"
     gts=readData(fileName)
 
     #load the predbbooxes dataset ground truth
@@ -15,12 +16,14 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
     preds=readData(fileName)
 
     imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/images/"
-    for i,fileName in enumerate(gts):
-        print(i,fileName)
-
+    # imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/images/"
+    for j,fileName in enumerate(gts):
+        # print(i,fileName)
+        # i=j+527 #for train set
+        i=j #for val set
         #reading the images
         image_path = imageFolder + fileName
-        print("image path is :",image_path)
+        # print("image path is :",image_path)
         img_raw_gt = cv2.imread(image_path, cv2.IMREAD_COLOR)
         img_raw_pred = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
@@ -46,7 +49,7 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
                 continue
             text = "{:.4f}".format(b[4])
             b = list(map(int, b))
-            cv2.rectangle(img_raw_pred, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+            cv2.rectangle(img_raw_pred, (b[0], b[1]), (b[2]+b[0], b[3]+b[1]), (0, 0, 255), 2)
             cx = b[0]
             cy = b[1] + 12
             cv2.putText(img_raw_pred, text, (cx, cy),
@@ -66,19 +69,20 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
         font = cv2.FONT_HERSHEY_SIMPLEX 
         
         # org 
-        org = (50, 50) 
+        org = (20, 50) 
         org2 = (50, 50+c.shape[0]//2) 
         
         # fontScale 
         fontScale = 1
         
         # Blue color in BGR 
-        color = (255, 0, 0) 
+        color = (0, 0, 255) 
         color2 = (0, 0, 255) 
         
         # Line thickness of 2 px 
         thickness = 2
-        c=cv2.putText(image, 'Model\'s Prediction at confthresh :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
+        # c=cv2.putText(image, '(Train Im)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
+        c=cv2.putText(image, '(Val Img)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
         c=cv2.putText(image, 'Ground Truth', org2, font, fontScale, color, thickness, cv2.LINE_AA) 
 
         #saving
@@ -87,6 +91,8 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
         if not os.path.isdir(savedir):
             os.makedirs(savedir)
         cv2.imwrite(savedir+"/{}.jpg".format(i),c)
+        print("{}-th image done saving".format(i))
+
         
 
 

@@ -32,7 +32,7 @@ parser.add_argument('--confidence_threshold', default=0.01, type=float, help='co
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
-parser.add_argument('-s', '--save_image', action="store_true", default=False, help='show detection results')
+parser.add_argument('-s', '--save_image', default="False",type=str, help='show detection results')
 parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
 args = parser.parse_args()
 
@@ -331,16 +331,19 @@ def neelEvaluation(iou_thresh,n):
     # print("Hard   Val AP: {}".format(aps[2]))
     print("=================================================")
 
-    input()
+    # input()
     return aps[0]
 
 
 if __name__ == '__main__':
 
 
-    if(args.save_image):
+    if(args.save_image=="True"):
         model_name=args.trained_model.strip(".pth").strip("/weights/")
-        saveImages(model_name,args.vis_thres)
+        saveImages(model_name,args.nms_threshold,args.confidence_threshold)
+        # n=int(input("Want to continue?"))
+        # if(n==0):
+        #     exit()
 
 
     # n=int(input("0 for NJIS,,,, 1 for Widerface:  "))
