@@ -16,6 +16,7 @@ from IPython import embed
 import sys
 sys.path.append("..")
 from utils.evalResults import readData, reductionProcedures
+import pickle
 
 
 parser = argparse.ArgumentParser(description='Retinaface')
@@ -120,7 +121,7 @@ def voc_ap(rec, prec):
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
-def getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh):
+def getYesNoScoreList(pred,gt,ignore,iou_thresh):
     """ single image evaluation
     pred: Nx5
     gt: Nx4
@@ -133,10 +134,10 @@ def getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh):
     gt=gt.astype(float)
     _pred = pred.copy()
     _gt = gt.copy()
-    ynsList = np.zeros((_gt.shape[0],2))
+    ynsList = np.zeros((_pred.shape[0],2))
     ynsList[...,1]=pred[...,4]
-    print("The confs list is \n",pred[...,4] )
-    print("The yns list is \n",ynsList )
+    # print("The confs list is \n",pred[...,4] )
+    # print("The yns list is \n",ynsList )
 
 
     
@@ -149,11 +150,60 @@ def getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh):
 
     overlaps = bbox_overlaps(_pred[:, :4], _gt)
    
-
+    # print(overlaps.shape,"Overlapsssss\n",overlaps)
     for h in range(_pred.shape[0]):
 
         gt_overlap = overlaps[h]
+        # print("gt overlap\n",gt_overlap)
         max_overlap, max_idx = gt_overlap.max(), gt_overlap.argmax()
+        # print(max_overlap,max_idx)
+        if max_overlap >= iou_thresh:
+            # if ignore[max_idx] == 0:
+            # my change made
+            if False:
+                ynsList[max_idx][0] = -1
+            elif ynsList[h][0] == 0:
+                ynsList[h][0] = 1
+
+    return ynsList
+
+def getYesNoScoreList2(pred,gt,ignore,iou_thresh):
+    """ single image evaluation
+    pred: Nx5
+    gt: Nx4
+    ignore:
+    """
+    # print("shapess are of pred and gt",pred.shape,gt.shape)
+    # print(type(pred),pred)
+    # print("--------------------------------",gt)
+    pred=pred.astype(float)
+    gt=gt.astype(float)
+    _pred = pred.copy()
+    _gt = gt.copy()
+    ynsList = np.zeros((_pred.shape[0],2))
+    ynsList[...,1]=pred[...,4]
+    # print("The confs list is \n",pred[...,4] )
+    # print("The yns list is \n",ynsList )
+
+
+    
+
+
+    _pred[:, 2] = _pred[:, 2] + _pred[:, 0]
+    _pred[:, 3] = _pred[:, 3] + _pred[:, 1]
+    _gt[:, 2] = _gt[:, 2] + _gt[:, 0]
+    _gt[:, 3] = _gt[:, 3] + _gt[:, 1]
+
+    overlaps = bbox_overlaps(_pred[:, :4], _gt)
+   
+    # print(overlaps.shape,"Overlapsssss\n",overlaps)
+    overlaps=overlaps.T
+    for h in range(_gt.shape[0]):
+
+        pred_overlap = overlaps[h]
+        # print("gt overlap\n",pred_overlap)
+        max_overlap, max_idx = pred_overlap.max(), pred_overlap.argmax()
+        # print(max_overlap,max_idx)
         if max_overlap >= iou_thresh:
             # if ignore[max_idx] == 0:
             # my change made
@@ -165,14 +215,18 @@ def getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh):
     return ynsList
 
 def givePRCurve(pr_data_collector,count_face):
-    # pr_data_collector= nx2
+    # pr_data_collector= nx2 (yes/no,conf)
+    #returns nx3 (prec,recall,conf)
+    #---------------------------------------------
     # sort the data according to scores
-    pr_data_collector=np.array(list(pr_data_collector).sort(key= lambda x:x[1],reverse=True))
+    pr_data_collector.view("f8,f8").sort(order=["f1"],axis=0)
+    pr_data_collector=pr_data_collector[::-1,...]
+    # print(pr_data_collector.shape)
 
     # now looping over it 
     tp=0
     fp=0
-    my_pr_curve=np.zeros(pr_data_collector.shape)
+    my_pr_curve=np.zeros((pr_data_collector.shape[0],3))
     
     for i, prPoint in enumerate(my_pr_curve):
         if(pr_data_collector[i][0]==1):
@@ -184,6 +238,7 @@ def givePRCurve(pr_data_collector,count_face):
         
         prPoint[0]=(tp/(tp+fp))# this is precision
         prPoint[1]=tp/count_face
+        prPoint[2]=pr_data_collector[i][1]
 
     return my_pr_curve
 
@@ -209,7 +264,7 @@ def neelEvaluation(iou_thresh,n):
     preds=readData(fileName)
 
     #my addition for pr implementation acccording to jonathan huis article
-    pr_data_collector=[]
+    pr_data_collector=np.array([]).reshape(0,2)
 
 
     for i,fileName in enumerate(gts):
@@ -230,8 +285,8 @@ def neelEvaluation(iou_thresh,n):
             pr_curve += _img_pr_info
 
             #my addition for pr implementation acccording to jonathan huis article
-            yns_List=getYesNoScoreList(predbox,gt_boxesToSend,ignore,iou_thresh)
-            pr_data_collector.append(yns_List)
+            yns_List=getYesNoScoreList2(predbox,gt_boxesToSend,ignore,iou_thresh)
+            pr_data_collector=np.concatenate((pr_data_collector,yns_List),axis=0)
         
         #i am thinking of adding the other cases as well when no gt boxes and whn no pred boxes ok well do that in next version
 
@@ -241,10 +296,16 @@ def neelEvaluation(iou_thresh,n):
     pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
 
     #my addition for pr implementation acccording to jonathan huis article
-    pr_data_collector=np.array(pr_data_collector).reshape((-1,2))
+    # print("pr curve",pr_data_collector,np.array(pr_data_collector))
     my_pr_curve=givePRCurve(pr_data_collector,count_face)
 
-    print("my ap is coming out to be",voc_ap(my_pr_curve[...,1],my_pr_curve[...,0]))
+    propose = my_pr_curve[:, 0]
+    recall = my_pr_curve[:, 1]
+    print("my ap is coming out to be",voc_ap(recall,propose))
+    if(iou_thresh==0.3):
+        a=open("optimise.pickle","wb")
+        pickle.dump(my_pr_curve,a)
+        a.close()
     
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
@@ -252,7 +313,7 @@ def neelEvaluation(iou_thresh,n):
             xe[0]=1
     propose = pr_curve[:, 0]
     recall = pr_curve[:, 1]
-    
+    # print(recall)
 
     ap = voc_ap(recall, propose)
     aps.append(ap)
@@ -268,6 +329,8 @@ def neelEvaluation(iou_thresh,n):
     # print("Medium Val AP: {}".format(aps[1]))
     # print("Hard   Val AP: {}".format(aps[2]))
     print("=================================================")
+
+    input()
     return aps[0]
 
 
