@@ -13,6 +13,7 @@ def readData(fileLocation):
     data=pickle.load(dataFile)
     dataFile.close()
     # data[<filename>][<"loc">/<"landms">/<"conf">]
+    # but it really depends on what kind of data there is stored in the pickle file
     return data
 
 def reductionProcedures(imgData,nms_threshold,confidence_threshold):

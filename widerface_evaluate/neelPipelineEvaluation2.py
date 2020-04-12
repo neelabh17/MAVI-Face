@@ -17,6 +17,7 @@ import sys
 sys.path.append("..")
 from utils.evalResults import readData, reductionProcedures
 import pickle
+from data.compare_img import saveImages
 
 
 parser = argparse.ArgumentParser(description='Retinaface')
@@ -335,6 +336,12 @@ def neelEvaluation(iou_thresh,n):
 
 
 if __name__ == '__main__':
+
+
+    if(args.save_image):
+        model_name=args.trained_model.strip(".pth").strip("/weights/")
+        saveImages(model_name,args.vis_thres)
+
 
     # n=int(input("0 for NJIS,,,, 1 for Widerface:  "))
     #doing this intentionally so that i dint have to inupt it every single time
