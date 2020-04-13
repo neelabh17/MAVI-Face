@@ -85,7 +85,7 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
         c=cv2.putText(image, 'Ground Truth', org2, font, fontScale, color, thickness, cv2.LINE_AA) 
 
         #saving
-        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name+"/{}".format)save_dataset
+        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name+"/{}".format(save_dataset)
         
         if not os.path.isdir(savedir):
             os.makedirs(savedir)
