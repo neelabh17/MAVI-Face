@@ -4,9 +4,9 @@ import numpy as np
 import cv2
 import os
 from utils.evalResults import readData, reductionProcedures
-def saveImages(trained_model_name,nms_threshold,vis_thresh):
+def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
     # load dataset ground truth
-    fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.pickle"
+    fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/{}/label.pickle".format(save_dataset)
     # fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/label.pickle"
     gts=readData(fileName)
 
@@ -15,12 +15,11 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
     fileName=evalDataFolder+trained_model_name+"/outResults.pickle"
     preds=readData(fileName)
 
-    imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/images/"
+    imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/{}/images/".format(save_dataset)
     # imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/images/"
-    for j,fileName in enumerate(gts):
+    for i,fileName in enumerate(gts):
         # print(i,fileName)
         # i=j+527 #for train set
-        i=j #for val set
         #reading the images
         image_path = imageFolder + fileName
         # print("image path is :",image_path)
@@ -81,12 +80,12 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh):
         
         # Line thickness of 2 px 
         thickness = 2
-        # c=cv2.putText(image, '(Train Im)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
-        c=cv2.putText(image, '(Val Img)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
+        c=cv2.putText(image, '({}'.format(save_dataset)+' Im)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
+        # c=cv2.putText(image, '(Val Img)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
         c=cv2.putText(image, 'Ground Truth', org2, font, fontScale, color, thickness, cv2.LINE_AA) 
 
         #saving
-        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name
+        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name+"/{}".format)save_dataset
         
         if not os.path.isdir(savedir):
             os.makedirs(savedir)
