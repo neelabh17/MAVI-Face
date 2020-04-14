@@ -11,6 +11,7 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
     gts=readData(fileName)
 
     #load the predbbooxes dataset ground truth
+    #works as long as widerfaceevaluate has been run on 
     evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
     fileName=evalDataFolder+trained_model_name+"/outResults.pickle"
     preds=readData(fileName)
