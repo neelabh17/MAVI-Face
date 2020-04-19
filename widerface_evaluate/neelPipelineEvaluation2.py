@@ -14,6 +14,9 @@ from scipy.io import loadmat
 from bbox import bbox_overlaps
 from IPython import embed
 import sys
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("..")
 from utils.evalResults import readData, reductionProcedures
 import pickle
@@ -26,7 +29,7 @@ parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.p
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--origin_size', default=True, type=str, help='Whether use origin image size to evaluate')
 parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
-parser.add_argument('--save_dataset', default='val', type=str, help="on which dataset do we compare images")
+parser.add_argument('--dataset', default='val', type=str, help="on which dataset do we compare images")
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
 parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
@@ -169,7 +172,7 @@ def getYesNoScoreList(pred,gt,ignore,iou_thresh):
 
     return ynsList
 
-def getYesNoScoreList2(pred,gt,ignore,iou_thresh):
+def getYesNoScoreList2(pred,gt,ignore,iou_thresh,fileName):
     """ single image evaluation
     pred: Nx5
     gt: Nx4
@@ -201,18 +204,27 @@ def getYesNoScoreList2(pred,gt,ignore,iou_thresh):
     # print(overlaps.shape,"Overlapsssss\n",overlaps)
     overlaps=overlaps.T
     for h in range(_gt.shape[0]):
-
-        pred_overlap = overlaps[h]
-        # print("gt overlap\n",pred_overlap)
-        max_overlap, max_idx = pred_overlap.max(), pred_overlap.argmax()
-        # print(max_overlap,max_idx)
-        if max_overlap >= iou_thresh:
-            # if ignore[max_idx] == 0:
-            # my change made
-            if False:
-                ynsList[max_idx][0] = -1
-            elif ynsList[max_idx][0] == 0:
-                ynsList[max_idx][0] = 1
+        # for igno in ignore:
+        #     print(igno)
+        # input()
+        # print(fileName)
+        # print(fileName+str(h))
+        # print(fileName+str(h) in ignore)
+        
+        if (fileName+str(h)) in ignore:
+            print("ignoring"+fileName+str(h))
+        else:
+            pred_overlap = overlaps[h]
+            # print("gt overlap\n",pred_overlap)
+            max_overlap, max_idx = pred_overlap.max(), pred_overlap.argmax()
+            # print(max_overlap,max_idx)
+            if max_overlap >= iou_thresh:
+                # if ignore[max_idx] == 0:
+                # my change made
+                if False:
+                    ynsList[max_idx][0] = -1
+                elif ynsList[max_idx][0] == 0:
+                    ynsList[max_idx][0] = 1
 
     return ynsList
 
@@ -244,6 +256,28 @@ def givePRCurve(pr_data_collector,count_face):
 
     return my_pr_curve
 
+def getGTIgnoreSet(category):
+
+    file=open("/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/fn.pickle","rb")
+    a=pickle.load(file)
+    file.close()
+    # errorList=["Blur","Small","Dark","Tree","occulusion","in group","dif object","non annotated face","less iou"]
+    errorList=["Small","Dark","in group","not predicted","less iou"]
+
+
+
+    dtype=[(x,int) for x in errorList]
+    setList={setname: set() for setname in errorList}
+
+    totalWrongPredBoxes=0
+    for filename in a:
+        nparray=a[filename]
+        totalWrongPredBoxes+=len(np.where(np.sum(nparray,axis=1)>0)[0])
+        for i , setname in enumerate(setList):
+            ok=(np.where(nparray[:,i]==1)[0])
+            for j in ok:
+                setList[setname].add(filename+str(j))
+    return setList[category],len(setList[category])
 
 
 def neelEvaluation(iou_thresh,n):
@@ -251,6 +285,7 @@ def neelEvaluation(iou_thresh,n):
     thresh_num = 1000
     pr_curve = np.zeros((thresh_num, 2)).astype('float')
     aps=[]
+    my_aps=[]
     totalFacesAnno=0
     i=0
     j=0
@@ -267,8 +302,9 @@ def neelEvaluation(iou_thresh,n):
 
     #my addition for pr implementation acccording to jonathan huis article
     pr_data_collector=np.array([]).reshape(0,2)
-
-
+    ignore,facesRemoved=getGTIgnoreSet("Small")
+    ignore=[]
+    facesRemoved=0
     for i,fileName in enumerate(gts):
         print(i,fileName)
 
@@ -280,14 +316,14 @@ def neelEvaluation(iou_thresh,n):
         pred_data=preds[fileName]
         dets,predbox=reductionProcedures(pred_data,args.nms_threshold,args.confidence_threshold)
         if(predbox.shape[0]>0 and gt_boxesToSend.shape[0]>0):
-            ignore = np.zeros(gt_boxesToSend.shape[0])
+            # ignore = np.zeros(gt_boxesToSend.shape[0])
             count_face+=len(gt_boxesToSend)
             pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
             _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
             pr_curve += _img_pr_info
 
             #my addition for pr implementation acccording to jonathan huis article
-            yns_List=getYesNoScoreList2(predbox,gt_boxesToSend,ignore,iou_thresh)
+            yns_List=getYesNoScoreList2(predbox,gt_boxesToSend,ignore,iou_thresh,fileName)
             pr_data_collector=np.concatenate((pr_data_collector,yns_List),axis=0)
         
         #i am thinking of adding the other cases as well when no gt boxes and whn no pred boxes ok well do that in next version
@@ -299,16 +335,18 @@ def neelEvaluation(iou_thresh,n):
 
     #my addition for pr implementation acccording to jonathan huis article
     # print("pr curve",pr_data_collector,np.array(pr_data_collector))
+    count_face-=facesRemoved
     my_pr_curve=givePRCurve(pr_data_collector,count_face)
 
     propose = my_pr_curve[:, 0]
     recall = my_pr_curve[:, 1]
-    print("my ap is coming out to be",voc_ap(recall,propose))
+    my_ap=voc_ap(recall,propose)
+    print("my ap is coming out to be",my_ap)
     if(iou_thresh==0.3):
         a=open("optimise.pickle","wb")
         pickle.dump(my_pr_curve,a)
         a.close()
-    
+    my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
         if(np.isnan(xe[0])):
@@ -333,7 +371,7 @@ def neelEvaluation(iou_thresh,n):
     print("=================================================")
 
     # input()
-    return aps[0]
+    return my_aps[0]
 
 
 if __name__ == '__main__':
@@ -341,10 +379,11 @@ if __name__ == '__main__':
 
     if(args.save_image=="True"):
         model_name=args.trained_model.strip(".pth").strip("/weights/")
-        saveImages(model_name,args.nms_threshold,args.confidence_threshold,args.save_dataset)
+        saveImages(model_name,args.nms_threshold,args.confidence_threshold,args.dataset)
         # n=int(input("Want to continue?"))
         # if(n==0):
         #     exit()
+        exit()
 
 
     # n=int(input("0 for NJIS,,,, 1 for Widerface:  "))
@@ -359,21 +398,27 @@ if __name__ == '__main__':
         # input()
         iouVsAP.append([i,neelEvaluation(i,n)])
     summer=0
+    summer2=0
     evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
     a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/resultspickle.txt","w")
+    # a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/resultspicklesmall.txt","w")
     for itemer in iouVsAP:
-
-        print(itemer)
-        a.write(str(itemer))
+        if( itemer[0]>=0.5):
+            summer2+=itemer[1]
+        print(itemer[0], "\t AP={:.4f}".format(itemer[1]))
+        a.write(str(itemer[0])+"\t AP={:.4f}".format(itemer[1]))
         a.write("\n")
         summer+=itemer[1]
 
     print("=================================================")
-    print("mAP is : " +str(summer/len(ious)))
-    a.write("===============================================\nmAP is : "+str(summer/len(ious)))
+    print("mAP 0.25:0.05:0.95 is  : {:.4f}".format(summer/len(ious)))
+    print("mAP 0.5:0.05:0.95 is  : {:.4f}".format(summer2/10))
+    a.write("===============================================\nmAP 0.25:0.05:0.95 is :{:.4f} ".format(summer/len(ious)))
+    a.write("\nmAP 0.5:0.05:0.95 is : {:.4f}".format(summer2/10))
     a.close()
 
     a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/results.pickle","wb")
+    # a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/resultssmall.pickle","wb")
     import pickle
     pickle.dump(iouVsAP,a)
     a.close()

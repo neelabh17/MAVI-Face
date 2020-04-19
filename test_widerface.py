@@ -22,6 +22,7 @@ parser.add_argument('--origin_size', default=True, type=str, help='Whether use o
 parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
+parser.add_argument('--dataset', default='val', type=str, help='dataset path')
 parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -173,7 +174,7 @@ if __name__ == '__main__':
 
 
     #saving in widerface_txt folder
-    save_name = args.save_folder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
+    save_name = args.save_folder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults_{}.pickle".format(args.dataset)
     dirname = os.path.dirname(save_name)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
@@ -182,7 +183,7 @@ if __name__ == '__main__':
     dataFile.close()
 
     #saving in evalData folder
-    save_name = "./evalData/"+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
+    save_name = "./evalData/"+args.trained_model.strip(".pth").strip("/weights/")+"/outResults_{}.pickle".format(args.dataset)
     dirname = os.path.dirname(save_name)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
