@@ -29,14 +29,17 @@ parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.p
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--origin_size', default=True, type=str, help='Whether use origin image size to evaluate')
 parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
+parser.add_argument('--savename', default='baseline', type=str, help='name of our save')
 parser.add_argument('--dataset', default='val', type=str, help="on which dataset do we compare images")
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
 parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
+parser.add_argument('--area_threshold', default=225, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', default="False",type=str, help='show detection results')
+parser.add_argument('--merge_images', default="False",type=str, help='show detection results')
 parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
 args = parser.parse_args()
 
@@ -289,15 +292,13 @@ def neelEvaluation(iou_thresh,n):
     totalFacesAnno=0
     i=0
     j=0
-    # ig=0
-    # ignoreimgs=[18,37,44,51,54,67,72,83,87,90,91,93,94,98,101,102,105,114,117,159,166,184,217,219,235,238,267,279,281,287,295,314,315,327,329,334,336,348]
     #load val dataset ground truth
     fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.pickle"
     gts=readData(fileName)
 
     #load the predbbooxes dataset ground truth
     evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
-    fileName=evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults.pickle"
+    fileName=evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults_val.pickle"
     preds=readData(fileName)
 
     #my addition for pr implementation acccording to jonathan huis article
@@ -306,7 +307,7 @@ def neelEvaluation(iou_thresh,n):
     ignore=[]
     facesRemoved=0
     for i,fileName in enumerate(gts):
-        print(i,fileName)
+        # print(i,fileName)
 
         #because ppickle file doesnt load files in form of numpy stuff
         gt_boxesToSend=np.array(gts[fileName])
@@ -315,8 +316,18 @@ def neelEvaluation(iou_thresh,n):
 
         pred_data=preds[fileName]
         dets,predbox=reductionProcedures(pred_data,args.nms_threshold,args.confidence_threshold)
+        #removing small faces
+        area_thresh=args.area_threshold   #in pixels
+        predbox=predbox[np.where(np.multiply(predbox[:,2],predbox[:,3])>=area_thresh)[0]]
+        # print("---------------")
+        # print(np.multiply(gt_boxesToSend[:,2],gt_boxesToSend[:,3]))
+        # print(gt_boxesToSend)
+        # print(gt_boxesToSend.shape)
+        gt_boxesToSend=gt_boxesToSend[np.where(np.multiply(gt_boxesToSend[:,2],gt_boxesToSend[:,3])>=area_thresh)[0]]
+        # print(gt_boxesToSend.shape)
         if(predbox.shape[0]>0 and gt_boxesToSend.shape[0]>0):
             # ignore = np.zeros(gt_boxesToSend.shape[0])
+
             count_face+=len(gt_boxesToSend)
             pred_recall, proposal_list = neel_image_eval(predbox, gt_boxesToSend, ignore, iou_thresh)
             _img_pr_info = img_pr_info(thresh_num, predbox, proposal_list, pred_recall)
@@ -379,7 +390,7 @@ if __name__ == '__main__':
 
     if(args.save_image=="True"):
         model_name=args.trained_model.strip(".pth").strip("/weights/")
-        saveImages(model_name,args.nms_threshold,args.confidence_threshold,args.dataset)
+        saveImages(model_name,args.nms_threshold,args.confidence_threshold,args.dataset,args.savename,args.area_threshold,args.merge_images)
         # n=int(input("Want to continue?"))
         # if(n==0):
         #     exit()

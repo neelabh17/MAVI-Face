@@ -3,8 +3,9 @@ sys.path.append("..")
 import numpy as np
 import cv2
 import os
+import time
 from utils.evalResults import readData, reductionProcedures
-def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
+def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset,save_name,area_thresh,mergeImages):
     # load dataset ground truth
     fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/{}/label.pickle".format(save_dataset)
     # fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/label.pickle"
@@ -24,8 +25,12 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
 
     imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/{}/images/".format(save_dataset)
     # imageFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/train/images/"
+    tic=time.time()
     for i,fileName in enumerate(gts):
         # print(i,fileName)
+        if(i%100==0):
+            print(time.time()-tic)
+            tic=time.time()
         # i=j+527 #for train set
         #reading the images
         image_path = imageFolder + fileName
@@ -39,6 +44,8 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
         gt_boxesToSend=np.array(gts[fileName])
         gt_boxesToSend=gt_boxesToSend[...,:4]
         gt_boxesToSend=gt_boxesToSend.astype(int)
+        #remove small faces
+        gt_boxesToSend=gt_boxesToSend[np.where(np.multiply(gt_boxesToSend[:,2],gt_boxesToSend[:,3])>=area_thresh)[0]]
 
         #print boxes on gt image
         for b in gt_boxesToSend:
@@ -54,6 +61,8 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
         #get pred data for image
         pred_data=preds[fileName]
         dets,predbox=reductionProcedures(pred_data,nms_threshold,vis_thresh)
+        #removing small faces
+        dets=dets[np.where(np.multiply(dets[:,2],dets[:,3])>=area_thresh)[0]]
 
         #putting up pred bbox
         for b in dets:
@@ -80,6 +89,10 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
         PTpred_data=PTpreds[fileName]
         PTdets,predbox=reductionProcedures(PTpred_data,nms_threshold,vis_thresh)
         #putting up pred bbox on pretrained
+
+        #removing small boxes
+        PTdets=PTdets[np.where(np.multiply(PTdets[:,2],PTdets[:,3])>=area_thresh)[0]]
+
         for b in PTdets:
             if b[4] < vis_thresh:
                 continue
@@ -118,18 +131,33 @@ def saveImages(trained_model_name,nms_threshold,vis_thresh,save_dataset):
         
         # Line thickness of 2 px 
         thickness = 2
-        c=cv2.putText(image, '({}'.format(save_dataset)+' Im)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
-        c=cv2.putText(image, '({}'.format(save_dataset)+"Image)Pretraiend prediction", org2, font, fontScale, color, thickness, cv2.LINE_AA) 
+        c=cv2.putText(image, '{}'.format(save_dataset)+"-Fine tuned New Annot", org, font, fontScale, color, thickness, cv2.LINE_AA) 
+        c=cv2.putText(image, '{}'.format(save_dataset)+"Pretraiend New Annot", org2, font, fontScale, color, thickness, cv2.LINE_AA) 
         # c=cv2.putText(image, '(Val Img)Pred at conf-thres :{:.4f}'.format(vis_thresh), org, font, fontScale, color, thickness, cv2.LINE_AA) 
-        c=cv2.putText(image, 'Ground Truth', org3, font, fontScale, color, thickness, cv2.LINE_AA) 
+        c=cv2.putText(image, 'Ground Truth-New Annot', org3, font, fontScale, color, thickness, cv2.LINE_AA) 
 
         #saving
-        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name+"/{}".format(save_dataset)
+        savedir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/"+trained_model_name+"/{}-{}".format(save_dataset,save_name)
         
         if not os.path.isdir(savedir):
             os.makedirs(savedir)
         cv2.imwrite(savedir+"/{}.jpg".format(i),c)
+        
+        
+        
+        
+        #merging
+        if(mergeImages=="True"):
+            basefilesdir="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/errorAnal/images_for_comparision/Resnet50_epoch_28_noGrad_FT_Adam_lre3/val"
+            d=cv2.imread(basefilesdir+"/{}.jpg".format(i))
+            mergesavedir=savedir+"/merge"
+            if not os.path.isdir(mergesavedir):
+                os.makedirs(mergesavedir)
+            e=np.concatenate((d,c),axis=1)
+            
+            cv2.imwrite(mergesavedir+"/{}.jpg".format(i),e)
         print("{}-th image done saving".format(i))
+
 
         
 
