@@ -5,3 +5,4 @@ widerface_evaluate/**imgResults/**.jpg
 widerface_evaluate/
 data/**.jpg
 *.jpg
+*.mp4
