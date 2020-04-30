@@ -108,9 +108,6 @@ if __name__ == '__main__':
         priors = priorbox.forward()
         priors = priors.to(device)
         prior_data = priors.data
-        print(" This is the prior box shape",prior_data.shape)
-
-        
 
         boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
         boxes = boxes * scale / resize
@@ -119,7 +116,6 @@ if __name__ == '__main__':
 
         landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
 
-        # print(landms)
         scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
                                img.shape[3], img.shape[2], img.shape[3], img.shape[2],
                                img.shape[3], img.shape[2]])
