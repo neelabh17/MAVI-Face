@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
         # show image
         if args.save_image:
-            for b in dets1:
+            for b in dets:
                 if b[4] < args.vis_thres:
                     continue
                 text = "{:.4f}".format(b[4])
