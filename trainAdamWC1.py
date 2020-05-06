@@ -55,17 +55,11 @@ training_dataset = args.training_dataset
 validation_dataset = args.validation_dataset
 save_folder = args.save_folder
 
+ohem_location = './data/widerface/ohem/label.txt'
+
 net = RetinaFace(cfg=cfg)
-print("Printing net...")
-# i=0
-# for name,params in net.named_parameters():
-#     if(i<219):
-#         params.requires_grad=False
-#     print(i,name,params.requires_grad)
-#     i+=1
-        
-# print(net)
-# input("Just stopping here now")
+
+# resume net if possible
 if args.resume_net is not None:
     print('Loading resume network...')
     state_dict = torch.load(args.resume_net)
@@ -83,15 +77,14 @@ if args.resume_net is not None:
 
 cudnn.benchmark = True
 
-# okay now we want to add new layers
+# okay now we want to re-initialise layers
 
-for params in net.parameters():  # set all layers to false
+for params in net.parameters():  # set all layers requires_grad to false
     params.requires_grad = False
 
 net.ClassHead = net._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])  # re-initiliaze the layers
 net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel'])
-for name, param in net.named_parameters():
-    print(name,param.shape)
+
 # for name, param in net.named_parameters():  # util to print layers that are now trainable
 #     if param.requires_grad:
 #         print (name)
@@ -130,6 +123,10 @@ def train():
     print('Loading Val Dataset...')
     val_data = WiderFaceDetection(validation_dataset,preproc(img_dim, rgb_mean))
     dataset_ = data.DataLoader(val_data,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
+
+    print('Loading OHEM data...')
+    ohem_data_ = WiderFaceDetection(ohem_location,preproc(img_dim, rgb_mean))
+    ohem_data = data.DataLoader(ohem_data_,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
 
     epoch_size = math.ceil(len(dataset) / batch_size)
     max_iter = max_epoch * epoch_size
@@ -185,9 +182,16 @@ def train():
         if iteration % epoch_size == 0:
             # print('Training loss per image for Epoch {} : {}'.format(epoch,epoch_loss_train/len(dataset)))
             print('Training loss for Epoch {} : {}'.format(epoch,epoch_loss_train))
+
+            # calc val loss after each epoch
             valLoss=train_eval(net,dataset_,batch_size,epoch)
             lossrn=valLoss
-            lossCollector.append({"Epoch":epoch,"TrainLoss":epoch_loss_train,"ValLoss":valLoss})
+
+            # also calc ohem_loss after each epoch
+            ohem_loss = train_eval(net,ohem_data,batch_size,epoch,is_ohem=True)
+
+            lossCollector.append({"Epoch":epoch,"TrainLoss":epoch_loss_train,"ValLoss":valLoss,"OhemLoss":ohem_loss})
+            
             #saving the losses data per epoch
             picklefile=open("./lossData/"+pickleFileSaverName+"_{}.pickle".format(epoch),"wb")
             pickle.dump(lossCollector,picklefile)
@@ -204,10 +208,6 @@ def train():
     pickle.dump(lossCollector,picklefile)
 
     picklefile.close()
-
-
-    
-
 
 def adjust_learning_rate_by_neels(optimizer,lossrn):
     """Sets the learning rate
@@ -236,7 +236,7 @@ def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_s
     return lr
 
 
-def train_eval(model,val_data,batch_size_val,epoch_no):
+def train_eval(model,val_data,batch_size_val,epoch_no,is_ohem = False):
     model.eval()
     loss_val = 0.0
     for images_,targets_ in val_data:
@@ -249,9 +249,11 @@ def train_eval(model,val_data,batch_size_val,epoch_no):
             loss_l, loss_c, loss_landm = criterion(out, priors, targets_)
             loss = cfg['loc_weight'] * loss_l + loss_c + loss_landm
             loss_val += loss.item()
-
-    # loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
-    print('Validation loss for Epoch {} : {}'.format(epoch_no,loss_val))
+    if not is_ohem:
+        # loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
+        print('Validation loss for Epoch {} : {}'.format(epoch_no,loss_val))
+    else:
+        print('Ohem loss for Epoch {} : {}'.format(epoch_no,loss_val))
     return loss_val
     # print('Validation loss per image for Epoch {} : {}'.format(epoch_no,loss_val))
 
