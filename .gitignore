@@ -7,3 +7,6 @@ data/**.jpg
 *.jpg
 *.mp4
 .vscode
+gitToken.py
+gitCred.py.py
+gitToken.txt
