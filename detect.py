@@ -21,7 +21,7 @@ import time
 
 parser = argparse.ArgumentParser(description='Retinaface')
 
-parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.pth',
+parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_epoch_28_noGrad_FT_Adam_lre3.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
@@ -29,7 +29,7 @@ parser.add_argument('--confidence_threshold', default=0.055, type=float, help='c
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
-parser.add_argument('-s', '--save_image', action="store_true", default=False, help='show detection results')
+parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
 parser.add_argument('--vis_thres', default=0.055, type=float, help='visualization_threshold')
 parser.add_argument('--area_thres', default=225, type=float, help='visualization_threshold')
 args = parser.parse_args()
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     resize = 1
     from os.path import isfile, join
-    pathIn="/content/drive/My Drive/MAVI Videos/face_17_images/images/"
+    pathIn="hnmImages"
     files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
     print(len(files))
     files.sort()
@@ -98,9 +98,13 @@ if __name__ == '__main__':
     tic2=time.time()
     tic = time.time()
     inferencetimer=0
+
+    filer=open("hnmlabel.txt","w")
     for i,file in enumerate(files):
-        image_path = "/content/drive/My Drive/MAVI Videos/face_17_images/images"
+        image_path = "hnmImages"
+        print(file)
         img_raw = cv2.imread(image_path+"/"+file, cv2.IMREAD_COLOR)
+        
         # print(sys.getsizeof(img_raw))
         img = np.float32(img_raw)
 
@@ -166,7 +170,7 @@ if __name__ == '__main__':
         #removing small face predictions
         area_thresh=args.area_thres
         dets=dets[np.where(np.multiply(dets[:,2],dets[:,3])>=area_thresh)[0]]
-
+        filer.write("# NJIS/{}\n".format(file))
         # show image
         if args.save_image:
             for b in dets:
@@ -186,6 +190,14 @@ if __name__ == '__main__':
                 cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
                 cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
                 cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+                cv2.imshow('image',img_raw)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                n=int(input())
+                if(n==1):
+                    print(file)                   
+                    print(b[:4],[-1]*16)
+                    filer.write("{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \n".format(b[0],b[1],b[2],b[3],-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1))
             # save image
 
             
@@ -194,4 +206,7 @@ if __name__ == '__main__':
                 os.makedirs(savefolder)
                 notmade=False
             cv2.imwrite(savefolder+"/{}".format(file), img_raw)
+
+
+    filer.close()
 
