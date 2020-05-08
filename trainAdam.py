@@ -149,7 +149,7 @@ def train():
             # create batch iterator
             batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
             if (epoch % 2 == 0 and epoch > 0) or (epoch % 5 == 0 and epoch > cfg['decay1']):
-                torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '_noGrad_FT_Adam_lre3.pth')
+                torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '_noGrad_FT_Adam_lre3_HNM.pth')
             epoch += 1
 
         load_t0 = time.time()
@@ -193,7 +193,7 @@ def train():
 
             epoch_loss_train = 0.0
 
-    torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_lre3.pth')
+    torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_lre3_HNM.pth')
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
 
     #saving the data for losses
