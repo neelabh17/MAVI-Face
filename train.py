@@ -55,6 +55,7 @@ gamma = args.gamma
 training_dataset = args.training_dataset
 validation_dataset = args.validation_dataset
 save_folder = args.save_folder
+save_epoch=args.save_epoch
 
 ohem_dataset = './data/widerface/ohem/label.txt'
 
@@ -147,7 +148,7 @@ def train():
             # code called for each epoch at begin of the epoch
             # create batch iterator
             batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
-            if (epoch % 2 == 0 and epoch > 0) :
+            if (epoch % save_epoch == 0 and epoch > 0) :
                 torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '_noGrad_FT_Adam_WC1.pth')
             epoch += 1
 
