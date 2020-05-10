@@ -10,3 +10,4 @@ data/**.jpg
 gitToken.py
 gitCred.py.py
 gitToken.txt
+__pycache__/
