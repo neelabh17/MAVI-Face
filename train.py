@@ -14,6 +14,7 @@ import math
 from models.retinaface import RetinaFace
 import pickle
 from toolbox.lossPlotter import lossGraphPlotter
+from toolbox.makedir import make
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -120,13 +121,13 @@ def train():
     trainingSessionName=input("Enter the name for this training session: ")
     traingDetails=input("Enter details for the training : ")
 
-    pwd=os.getcwd
+    pwd=os.getcwd()
     intermediatePath=os.path.join("logs",trainingSessionName)
     sessionPath=os.path.join(pwd,intermediatePath)
     if(not os.path.isdir(sessionPath)):
-        os.path.makedirs(sessionPath)
+        os.makedirs(sessionPath)
     
-    f=open(os.path.join(sessionPath,"details.txt"),"W")
+    f=open(os.path.join(sessionPath,"details.txt"),"w")
     f.write(traingDetails)
     f.close()
 
@@ -170,13 +171,16 @@ def train():
             newtic=time.time()
             print("Performing Evalaution on the dataset at epoch {}".format(epoch), end=" - ")
             trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
+            # trainLoss=epoch_loss_train
             valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
             ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
             lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
             print("Done in {} secs".format(time.time()-newtic))
             
             #saving the losses data per epoch
-            lossDataFileName=os.path.join(os.path.join(sessionPath,"lossData"),"lossVsEpoch.pth")
+            lossFolder=os.path.join(sessionPath,"lossData")
+            make(lossFolder)
+            lossDataFileName=os.path.join(lossFolder,"lossVsEpoch.pth")
             picklefile=open(lossDataFileName,"wb")
             pickle.dump(lossCollector,picklefile)
             picklefile.close()
@@ -217,7 +221,7 @@ def train():
         if iteration % epoch_size == 0:
             print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
             
-            epoch_loss_train = 0.0
+            
             epoch+=1
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
@@ -249,7 +253,11 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
 
     model.eval()
     loss_val = 0.0
+    i=0
+
     for images_,targets_ in val_data:
+        print("{} done out of {}".format(i,len(val_data)))
+        i+=1
         
         images_ = images_.cuda()  # send to gpu
         targets_ = [anno.cuda() for anno in targets_]
@@ -261,7 +269,7 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
             loss_val += loss.item()
     
     loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
-    if(mode==1):
+    if(mode==0):
         # if running evaluation on training set for the pretrained model
         print('Training loss for Epoch {} : {}'.format(epoch_no,loss_val))
     elif(mode==1):
