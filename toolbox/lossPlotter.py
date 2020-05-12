@@ -46,9 +46,9 @@ def lossGraphPlotter(fileName,viewMode=False,saveMode=True):
     # naming the y axis 
         
     # giving a title to my graph 
-    
-    plt.ylabel("LOSS per image: Train (RED), Validation (GREEN)") 
-    plt.title(fileName.strip(".pickle")+":  Loss(per image) Vs Epoch ") 
+    print(fileName.strip(".pickle").split("/")[-3])
+    plt.ylabel("LOSS per image") 
+    plt.title(fileName.strip(".pickle").split("/")[-3]+":  Loss(per image) Vs Epoch ") 
     plt.text(ep[len(ep)-1]*.65,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.5,"Validation Loss per image (min={0:.2f} at epoch {1})".format(min(vl),ep[vl.index(min(vl))]),fontsize=12,color="green")
     plt.text(ep[len(ep)-1]*.65,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.6,"Training Loss per image (min={0:.2f} at epoch {1})".format(min(tl),ep[tl.index(min(tl))]),fontsize=12,color="red")
     plt.text(ep[len(ep)-1]*.65,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.7,"Ohem Loss per image (min={0:.2f} at epoch {1})".format(min(ol),ep[ol.index(min(ol))]),fontsize=12,color="orange")
