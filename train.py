@@ -18,7 +18,7 @@ from toolbox.lossPlotter import lossGraphPlotter
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
-parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument('--resume_net', default='./weights/Resnet50_Final.pth', help='resume net for retraining')
@@ -117,7 +117,6 @@ with torch.no_grad():
 def train():
     net.train()
     epoch = 0 + args.resume_epoch
-    pickleFileSaverName=input("Enter the name to save loss data : ")
     trainingSessionName=input("Enter the name for this training session: ")
     traingDetails=input("Enter details for the training : ")
 
