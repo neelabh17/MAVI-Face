@@ -13,6 +13,7 @@ import datetime
 import math
 from models.retinaface import RetinaFace
 import pickle
+from toolbox.lossPlotter import lossGraphPlotter
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -164,8 +165,7 @@ def train():
             batch_iterator = iter(data.DataLoader(train_dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
             if (epoch % save_epoch == 0 and epoch > 0) :
                 # code doest run for the zeroth epoch
-                torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '_noGrad_FT_Adam_WC1.pth')
-            
+                torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
             
             # for base model
             newtic=time.time()
@@ -177,11 +177,13 @@ def train():
             print("Done in {} secs".format(time.time()-newtic))
             
             #saving the losses data per epoch
-            picklefile=open(os.path.join(os.path.join(sessionPath,"lossData"),"lossVsEpoch.pth"),"wb")
+            lossDataFileName=os.path.join(os.path.join(sessionPath,"lossData"),"lossVsEpoch.pth")
+            picklefile=open(lossDataFileName,"wb")
             pickle.dump(lossCollector,picklefile)
             picklefile.close()
 
-            #saving is complete
+            # plotting the graph
+            lossGraphPlotter(lossDataFileName) 
 
 
 
@@ -221,12 +223,6 @@ def train():
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
-
-    #saving the data for losses
-    picklefile=open("./lossData/"+pickleFileSaverName+".pickle" ,"wb")
-    pickle.dump(lossCollector,picklefile)
-
-    picklefile.close()
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):
     """Sets the learning rate
