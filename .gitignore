@@ -4,7 +4,7 @@ errorAnal/images_for_comparision
 # widerface_evaluate/**imgResults/**.jpg
 widerface_evaluate/widerface_txt
 data/**/NJIS/
-*.jpg
+# *.jpg
 *.mp4
 .vscode
 gitToken.py
