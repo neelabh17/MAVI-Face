@@ -3,6 +3,7 @@ errorAnal/images_for_comparision
 # widerface_evaluate/**images/**.jpg
 # widerface_evaluate/**imgResults/**.jpg
 widerface_evaluate/widerface_txt
+widerface_evaluate/ground_truth/images
 data/**/images/
 # *.jpg
 *.mp4
