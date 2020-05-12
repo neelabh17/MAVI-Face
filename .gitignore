@@ -1,9 +1,9 @@
-errorAnal/**.jpg
+errorAnal/images_for_comparision
 *.pth
-widerface_evaluate/**images/**.jpg
-widerface_evaluate/**imgResults/**.jpg
+# widerface_evaluate/**images/**.jpg
+# widerface_evaluate/**imgResults/**.jpg
 widerface_evaluate/widerface_txt
-data/**.jpg
+data/**/NJIS/
 *.jpg
 *.mp4
 .vscode
