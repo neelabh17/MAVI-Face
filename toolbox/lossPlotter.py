@@ -56,7 +56,7 @@ def lossGraphPlotter(fileName,viewMode=False,saveMode=True):
     plt.text(ep[len(ep)-1]*.10,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.6,"Training Loss per image (min={0:.2f} at epoch {1})".format(min(tl),ep[tl.index(min(tl))]),fontsize=12,color="red")
     plt.text(ep[len(ep)-1]*.10,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.7,"Ohem Loss per image (min={0:.2f} at epoch {1})".format(min(ol),ep[ol.index(min(ol))]),fontsize=12,color="orange")
     if(saveMode):
-        plt.savefig(fileName.strip(".pickle")+"-graph.jpg")
+        plt.savefig(fileName.strip(".pickle")+"-graph.png")
     # plt.savefig( fileName.strip(".pickle")+"-Loss_per_image.jpg")
    
        
