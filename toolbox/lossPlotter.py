@@ -46,7 +46,6 @@ def lossGraphPlotter(fileName,viewMode=False,saveMode=True):
     # naming the y axis 
         
     # giving a title to my graph 
-    print(fileName.strip(".pickle").split("/")[-3])
     plt.ylabel("LOSS per image") 
     plt.title(fileName.strip(".pickle").split("/")[-3]+":  Loss(per image) Vs Epoch ") 
     plt.text(ep[len(ep)-1]*.65,max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+(-max(vl[len(ep)-1],tl[len(ep)-1],ol[len(ep)-1])+max(vl[0],tl[0],ol[0]))*0.5,"Validation Loss per image (min={0:.2f} at epoch {1})".format(min(vl),ep[vl.index(min(vl))]),fontsize=12,color="green")
