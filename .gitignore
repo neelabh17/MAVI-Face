@@ -9,6 +9,6 @@ data/**/images/
 *.mp4
 .vscode
 gitToken.py
-gitCred.py.py
+gitCred.py
 gitToken.txt
 __pycache__/
