@@ -117,9 +117,23 @@ def train():
     net.train()
     epoch = 0 + args.resume_epoch
     pickleFileSaverName=input("Enter the name to save loss data : ")
-    print('Loading Dataset...')
+    trainingSessionName=input("Enter the name for this training session: ")
+    traingDetails=input("Enter details for the training : ")
 
-    dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
+    pwd=os.getcwd
+    intermediatePath=os.path.join("logs",trainingSessionName)
+    sessionPath=os.path.join(pwd,intermediatePath)
+    if(not os.path.isdir(sessionPath)):
+        os.path.makedirs(sessionPath)
+    
+    f=open(os.path.join(sessionPath,"details.txt"),"W")
+    f.write(traingDetails)
+    f.close()
+
+
+    print('Loading Train Dataset...')
+    train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
+    train_dataset_ = data.DataLoader(train_dataset,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading Val Dataset...')
     val_data = WiderFaceDetection(validation_dataset,preproc(img_dim, rgb_mean))
@@ -129,7 +143,7 @@ def train():
     ohem_data = WiderFaceDetection(ohem_dataset,preproc(img_dim, rgb_mean))
     ohem_data_ = data.DataLoader(ohem_data,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
 
-    epoch_size = math.ceil(len(dataset) / batch_size)
+    epoch_size = math.ceil(len(train_dataset) / batch_size)
     max_iter = max_epoch * epoch_size
 
     stepvalues = (cfg['decay1'] * epoch_size, cfg['decay2'] * epoch_size)
@@ -147,10 +161,30 @@ def train():
         if iteration % epoch_size == 0:
             # code called for each epoch at begin of the epoch
             # create batch iterator
-            batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
+            batch_iterator = iter(data.DataLoader(train_dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
             if (epoch % save_epoch == 0 and epoch > 0) :
+                # code doest run for the zeroth epoch
                 torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '_noGrad_FT_Adam_WC1.pth')
-            epoch += 1
+            
+            
+            # for base model
+            newtic=time.time()
+            print("Performing Evalaution on the dataset at epoch {}".format(epoch), end=" - ")
+            trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
+            valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
+            ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
+            lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
+            print("Done in {} secs".format(time.time()-newtic))
+            
+            #saving the losses data per epoch
+            picklefile=open(os.path.join(os.path.join(sessionPath,"lossData"),"lossVsEpoch.pth"),"wb")
+            pickle.dump(lossCollector,picklefile)
+            picklefile.close()
+
+            #saving is complete
+
+
+
 
         load_t0 = time.time()
         if iteration in stepvalues:
@@ -177,29 +211,13 @@ def train():
         print('Epoch:{}/{} || Epochiter: {}/{} || Iter: {}/{} || Loc: {:.4f} Cla: {:.4f} Landm: {:.4f} || LR: {:.8f} || Batchtime: {:.4f} s || ETA: {}'
               .format(epoch, max_epoch, (iteration % epoch_size) + 1,
               epoch_size, iteration + 1, max_iter, loss_l.item(), loss_c.item(), loss_landm.item(), lr, batch_time, str(datetime.timedelta(seconds=eta))))
-
-        # calculate validation loss after each epoch
+        
+        
         if iteration % epoch_size == 0:
-            # run for each epoch at then end of each epoch
-
-            # print('Training loss per image for Epoch {} : {}'.format(epoch,epoch_loss_train/len(dataset)))
-            print('Training loss for Epoch {} : {}'.format(epoch,epoch_loss_train))
-
-            # calc val loss after each epoch
-            valLoss=train_eval(net,dataset_,batch_size,epoch)
-
-            # also calc ohem_loss after each epoch
-            ohem_loss = train_eval(net,ohem_data_,batch_size,epoch,is_ohem=True)
-
-            lossCollector.append({"Epoch":epoch,"TrainLoss":epoch_loss_train,"ValLoss":valLoss,"OhemLoss":ohem_loss})
+            print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
             
-            #saving the losses data per epoch
-            picklefile=open("./lossData/"+pickleFileSaverName+"_{}.pickle".format(epoch),"wb")
-            pickle.dump(lossCollector,picklefile)
-            picklefile.close()
-            #saving is complete
-
             epoch_loss_train = 0.0
+            epoch+=1
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
@@ -227,7 +245,13 @@ def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_s
     return lr
 
 
-def train_eval(model,val_data,batch_size_val,epoch_no,is_ohem = False):
+def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=False):
+    '''
+    mode= 0-> for training loss
+    mode= 1-> for validation loss
+    mode= 2-> for ohem loss
+    '''
+
     model.eval()
     loss_val = 0.0
     for images_,targets_ in val_data:
@@ -240,10 +264,14 @@ def train_eval(model,val_data,batch_size_val,epoch_no,is_ohem = False):
             loss_l, loss_c, loss_landm = criterion(out, priors, targets_)
             loss = cfg['loc_weight'] * loss_l + loss_c + loss_landm
             loss_val += loss.item()
-    if not is_ohem:
-        # loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
+    
+    loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
+    if(mode==1):
+        # if running evaluation on training set for the pretrained model
+        print('Training loss for Epoch {} : {}'.format(epoch_no,loss_val))
+    elif(mode==1):
         print('Validation loss for Epoch {} : {}'.format(epoch_no,loss_val))
-    else:
+    elif(mode==2):
         print('Ohem loss for Epoch {} : {}'.format(epoch_no,loss_val))
     return loss_val
     # print('Validation loss per image for Epoch {} : {}'.format(epoch_no,loss_val))
