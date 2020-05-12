@@ -180,7 +180,7 @@ def train():
             #saving the losses data per epoch
             lossFolder=os.path.join(sessionPath,"lossData")
             make(lossFolder)
-            lossDataFileName=os.path.join(lossFolder,"lossVsEpoch.pth")
+            lossDataFileName=os.path.join(lossFolder,"lossVsEpoch.pickle")
             picklefile=open(lossDataFileName,"wb")
             pickle.dump(lossCollector,picklefile)
             picklefile.close()
