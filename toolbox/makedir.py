@@ -1,5 +1,6 @@
 import os
 
-def make(folderName):
-    if(not os.path.isdir(folderName)):
-        os.makedirs(folderName)
+def make(dirName):
+    # dirname should be a directory name not a file name
+    if(not os.path.isdir(dirName)):
+        os.makedirs(dirName)

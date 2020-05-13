@@ -13,7 +13,7 @@ import datetime
 import math
 from models.retinaface import RetinaFace
 import pickle
-from toolbox.lossPlotter import lossGraphPlotter
+from toolbox.plotter import lossGraphPlotter
 from toolbox.makedir import make
 
 parser = argparse.ArgumentParser(description='Retinaface Training')

@@ -6,6 +6,7 @@ copyright@wondervictor
 """
 
 import os
+from os.path import join
 import tqdm
 import pickle
 import argparse
@@ -21,10 +22,13 @@ sys.path.append("..")
 from utils.evalResults import readData, reductionProcedures
 import pickle
 from data.compare_img import saveImages
+from toolbox.makedir import make
+from toolbox.pickleOpers import save,loadup
+
 
 
 parser = argparse.ArgumentParser(description='Retinaface')
-parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.pth',
+parser.add_argument('-m', '--trained_model', default='Resnet50_Final',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--origin_size', default=True, type=str, help='Whether use origin image size to evaluate')
@@ -33,15 +37,21 @@ parser.add_argument('--savename', default='baseline', type=str, help='name of ou
 parser.add_argument('--dataset', default='val', type=str, help="on which dataset do we compare images")
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
-parser.add_argument('--area_threshold', default=225, type=float, help='confidence_threshold')
+parser.add_argument('--confidence_threshold_eval', default=0.01, type=float, help='confidence_threshold_eval')
+parser.add_argument('--confidence_threshold_infer', default=0.55, type=float, help='confidence_threshold_infer')
+parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', default="False",type=str, help='show detection results')
 parser.add_argument('--merge_images', default="False",type=str, help='show detection results')
 parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
+parser.add_argument('--mode', default='single', type=str, help='single: eval on single model, series: evaluate on training session comes with in built graph plotter')
+
+
 args = parser.parse_args()
+
+
 
 def neel_image_eval(pred, gt, ignore, iou_thresh):
     """ single image evaluation
@@ -283,7 +293,7 @@ def getGTIgnoreSet(category):
     return setList[category],len(setList[category])
 
 
-def neelEvaluation(iou_thresh,n):
+def neelEvaluation(iou_thresh,modelPath,seriesData=None):
     count_face = 0
     thresh_num = 1000
     pr_curve = np.zeros((thresh_num, 2)).astype('float')
@@ -293,19 +303,25 @@ def neelEvaluation(iou_thresh,n):
     i=0
     j=0
     #load val dataset ground truth
-    fileName="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/data/widerface/val/label.pickle"
-    gts=readData(fileName)
+    fileName=join(os.getcwd(),"data","widerface","val","label.pickle")
+    gts=loadup(fileName)
 
     #load the predbbooxes dataset ground truth
-    evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
-    fileName=evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/outResults_val.pickle"
-    preds=readData(fileName)
+    evalDataFolder=join(os.getcwd(),"evalData")
+    if(seriesData is not None):
+        modelEvalFolder = join(os.getcwd(),"evalData",seriesData["seriesName"])
+        fileName = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,seriesData["epoch"]))
+    else:
+        modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"))
+        fileName = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
+
+
+    preds=loadup(fileName)
 
     #my addition for pr implementation acccording to jonathan huis article
     pr_data_collector=np.array([]).reshape(0,2)
-    ignore,facesRemoved=getGTIgnoreSet("Small")
+    # ignore,facesRemoved=getGTIgnoreSet("Small")
     ignore=[]
-    facesRemoved=0
     for i,fileName in enumerate(gts):
         # print(i,fileName)
 
@@ -315,7 +331,7 @@ def neelEvaluation(iou_thresh,n):
         gt_boxesToSend=gt_boxesToSend.astype(float)
 
         pred_data=preds[fileName]
-        dets,predbox=reductionProcedures(pred_data,args.nms_threshold,args.confidence_threshold)
+        dets,predbox=reductionProcedures(pred_data,args.nms_threshold,args.confidence_threshold_infer)
         #removing small faces
         area_thresh=args.area_threshold   #in pixels
         predbox=predbox[np.where(np.multiply(predbox[:,2],predbox[:,3])>=area_thresh)[0]]
@@ -346,17 +362,16 @@ def neelEvaluation(iou_thresh,n):
 
     #my addition for pr implementation acccording to jonathan huis article
     # print("pr curve",pr_data_collector,np.array(pr_data_collector))
-    count_face-=facesRemoved
     my_pr_curve=givePRCurve(pr_data_collector,count_face)
 
     propose = my_pr_curve[:, 0]
     recall = my_pr_curve[:, 1]
     my_ap=voc_ap(recall,propose)
     print("my ap is coming out to be",my_ap)
-    if(iou_thresh==0.3):
-        a=open("optimise.pickle","wb")
-        pickle.dump(my_pr_curve,a)
-        a.close()
+    # if(iou_thresh==0.3):
+    #     a=open("optimise.pickle","wb")
+    #     pickle.dump(my_pr_curve,a)
+    #     a.close()
     my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
@@ -369,10 +384,10 @@ def neelEvaluation(iou_thresh,n):
     ap = voc_ap(recall, propose)
     aps.append(ap)
 
-    evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
-    a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/pr{}.pickle".format(int(iou_thresh*100)),"wb")
-    pickle.dump(pr_curve,a)
-    a.close()
+    # evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
+    # a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/pr{}.pickle".format(int(iou_thresh*100)),"wb")
+    # pickle.dump(pr_curve,a)
+    # a.close()
 
     
     print("==================== Results ====================")
@@ -381,16 +396,76 @@ def neelEvaluation(iou_thresh,n):
     # print("Hard   Val AP: {}".format(aps[2]))
     print("=================================================")
 
-    # input()
     return my_aps[0]
 
+def MAPCalcAfterEval(newargs,modelPath,seriesData=None):
+    args=newargs
+    if(seriesData is None):
+        assert(args.mode=="single")
+    
+    if(seriesData is not None):
+        evalModelFolder=join(os.getcwd(),"evalData",seriesData["seriesName"])
+    else:
+        evalModelFolder=join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"))
+
+    if(args.save_image=="True"):
+        model_name=os.path.basename(modelPath).strip(".pth")
+        saveImages(model_name,args.nms_threshold,args.confidence_threshold_infer,args.dataset,args.savename,args.area_threshold,args.merge_images)
+        # n=int(input("Want to continue?"))
+        # if(n==0):
+        #     exit()
+        exit()
+
+
+    # n=int(input("0 for NJIS,,,, 1 for Widerface:  "))
+    #doing this intentionally so that i dint have to inupt it every single time
+    n=0
+
+    ious=[0.25+int(0.05*i*100)/100 for i in range(15)]
+
+    iouVsAP=[]
+    for i in ious:
+        iouVsAP.append([i,neelEvaluation(i,modelPath,seriesData)])
+    mAP_025=0
+    mAP_05=0
+
+    mapFolder=join(evalModelFolder,"mapData")
+    make(mapFolder)
+
+
+    if(seriesData is not None):
+        a=open(join(mapFolder,"results_epoch_{}.txt".format(seriesData["Epoch"])),"w")
+    else:
+        a=open(join(mapFolder,"results.txt"),"w")
+
+    for itemer in iouVsAP:
+        if( itemer[0]>=0.5):
+            mAP_05+=itemer[1]
+        print(itemer[0], "\t AP={:.4f}".format(itemer[1]))
+        a.write(str(itemer[0])+"\t AP={:.4f}".format(itemer[1]))
+        a.write("\n")
+        mAP_025+=itemer[1]
+
+    print("=================================================")
+    print("mAP 0.25:0.05:0.95 is  : {:.4f}".format(mAP_025/len(ious)))
+    print("mAP 0.5:0.05:0.95 is  : {:.4f}".format(mAP_05/10))
+    a.write("===============================================\nmAP 0.25:0.05:0.95 is :{:.4f} ".format(mAP_025/len(ious)))
+    a.write("\nmAP 0.5:0.05:0.95 is : {:.4f}".format(mAP_05/10))
+    a.close()
+
+    # save the same in a pickle file not really helpful but still let it be there
+    if seriesData is not None:
+        save(iouVsAP,join(mapFolder,"results_epoch_{}.pickle".format(seriesData["epoch"])))
+    else:
+        save(iouVsAP,join(mapFolder,"results.pickle"))
+
+    return mAP_05/10
 
 if __name__ == '__main__':
 
-
     if(args.save_image=="True"):
         model_name=args.trained_model.strip(".pth").strip("/weights/")
-        saveImages(model_name,args.nms_threshold,args.confidence_threshold,args.dataset,args.savename,args.area_threshold,args.merge_images)
+        saveImages(model_name,args.nms_threshold,args.confidence_threshold_infer,args.dataset,args.savename,args.area_threshold,args.merge_images)
         # n=int(input("Want to continue?"))
         # if(n==0):
         #     exit()
@@ -408,24 +483,24 @@ if __name__ == '__main__':
         # print(i)
         # input()
         iouVsAP.append([i,neelEvaluation(i,n)])
-    summer=0
-    summer2=0
+    mAP_025=0
+    mAP_05=0
     evalDataFolder="/content/drive/My Drive/RetinaFace/Pytorch_Retinaface/evalData/"
     a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/resultspickle.txt","w")
     # a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/resultspicklesmall.txt","w")
     for itemer in iouVsAP:
         if( itemer[0]>=0.5):
-            summer2+=itemer[1]
+            mAP_05+=itemer[1]
         print(itemer[0], "\t AP={:.4f}".format(itemer[1]))
         a.write(str(itemer[0])+"\t AP={:.4f}".format(itemer[1]))
         a.write("\n")
-        summer+=itemer[1]
+        mAP_025+=itemer[1]
 
     print("=================================================")
-    print("mAP 0.25:0.05:0.95 is  : {:.4f}".format(summer/len(ious)))
-    print("mAP 0.5:0.05:0.95 is  : {:.4f}".format(summer2/10))
-    a.write("===============================================\nmAP 0.25:0.05:0.95 is :{:.4f} ".format(summer/len(ious)))
-    a.write("\nmAP 0.5:0.05:0.95 is : {:.4f}".format(summer2/10))
+    print("mAP 0.25:0.05:0.95 is  : {:.4f}".format(mAP_025/len(ious)))
+    print("mAP 0.5:0.05:0.95 is  : {:.4f}".format(mAP_05/10))
+    a.write("===============================================\nmAP 0.25:0.05:0.95 is :{:.4f} ".format(mAP_025/len(ious)))
+    a.write("\nmAP 0.5:0.05:0.95 is : {:.4f}".format(mAP_05/10))
     a.close()
 
     a=open(evalDataFolder+args.trained_model.strip(".pth").strip("/weights/")+"/results.pickle","wb")
