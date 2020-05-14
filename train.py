@@ -87,9 +87,9 @@ for params in net.parameters():  # set all layers requires_grad to false
     params.requires_grad = False
 
 # re initialising our layers
-net.ClassHead = net._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])  
+net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
 # we can think of redcing this fpn from 5 to 3 to increase inference time by a bit
-net.BboxHead = net._make_bbox_head(fpn_num=3, inchannels=cfg['out_channel']) 
+net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
 
 
 Plist = []
