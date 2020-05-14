@@ -12,13 +12,13 @@ import pickle
 import argparse
 import numpy as np
 from scipy.io import loadmat
-from bbox import bbox_overlaps
 from IPython import embed
 import sys
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("..")
+from widerface_evaluate.bbox import bbox_overlaps
 from utils.evalResults import readData, reductionProcedures
 import pickle
 from data.compare_img import saveImages
@@ -37,8 +37,8 @@ parser.add_argument('--savename', default='baseline', type=str, help='name of ou
 parser.add_argument('--dataset', default='val', type=str, help="on which dataset do we compare images")
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold_eval', default=0.01, type=float, help='confidence_threshold_eval')
-parser.add_argument('--confidence_threshold_infer', default=0.55, type=float, help='confidence_threshold_infer')
+parser.add_argument('--confidence_threshold_eval', default=0.03, type=float, help='confidence_threshold_eval')
+parser.add_argument('--confidence_threshold_infer', default=0.055, type=float, help='confidence_threshold_infer')
 parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -429,12 +429,12 @@ def MAPCalcAfterEval(newargs,modelPath,seriesData=None):
     mAP_025=0
     mAP_05=0
 
-    mapFolder=join(evalModelFolder,"mapData")
+    mapFolder=join(evalModelFolder,"mapData","results")
     make(mapFolder)
 
 
     if(seriesData is not None):
-        a=open(join(mapFolder,"results_epoch_{}.txt".format(seriesData["Epoch"])),"w")
+        a=open(join(mapFolder,"results_epoch_{}.txt".format(seriesData["epoch"])),"w")
     else:
         a=open(join(mapFolder,"results.txt"),"w")
 

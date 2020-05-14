@@ -26,13 +26,13 @@ parser.add_argument('-m', '--trained_model', default='Resnet50_Final',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--origin_size', default=True, type=str, help='Whether use origin image size to evaluate')
-parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
+parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt', type=str, help='Dir to save txt results')
 parser.add_argument('--savename', default='baseline', type=str, help='name of our save')
 parser.add_argument('--dataset', default='val', type=str, help="on which dataset do we compare images")
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
-parser.add_argument('--dataset_folder', default='./data/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold_eval', default=0.01, type=float, help='confidence_threshold_eval')
-parser.add_argument('--confidence_threshold_infer', default=0.55, type=float, help='confidence_threshold_infer')
+parser.add_argument('--dataset_folder', default='./data/widerface/val/images', type=str, help='dataset path')
+parser.add_argument('--confidence_threshold_eval', default=0.03, type=float, help='confidence_threshold_eval')
+parser.add_argument('--confidence_threshold_infer', default=0.055, type=float, help='confidence_threshold_infer')
 parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -100,7 +100,7 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
 
     # testset_folder = basically this is "./data/widerface/val/images/"
     testset_folder= args.dataset_folder
-    
+    print(testset_folder)
     # generating a pickle file for the labels
     labelLoc=join(os.path.dirname(testset_folder),"label.txt")
     makeLabelPickle(labelLoc)
@@ -114,7 +114,7 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
     testResults={}
     # testing begin
     for i, img_name in enumerate(neelTestDataset):
-        image_path = testset_folder + img_name
+        image_path = join(testset_folder, img_name)
         print("image path is :",image_path)
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
         img = np.float32(img_raw)
@@ -196,7 +196,7 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
         #save file
         save(testResults,save_name)
 
-        print("Evaluation is done and evaluation file is saves as outResults.pickle in the respective folder of the model")
+    print("Evaluation is done and evaluation file is saves as outResults.pickle in the respective folder of the model")
         #now calling evaluation simultaneously
         # os.chdir("./widerface_evaluate/")
         # str="./widerface_txt/"+args.pretrained_path.strip(".pth").strip("/weights/")+"/"
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         for model in modelList:
             if(seriesName in model):
                 epochNumber=int(model.strip(".pth").split("_epoch_")[1])
-                modelsInSeries.append(epochNumber,model)
+                modelsInSeries.append([epochNumber,model])
 
         # my required models are stacked up
         #sorting them in order of epoch
@@ -232,7 +232,7 @@ if __name__ == '__main__':
             eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo)
             
             # get map
-            MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"eposh": epochNo})
+            MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"epoch": epochNo})
             mapData.append({"epoch":epochNo,"map":MAP})
             mapDataSaverfile=join(os.getcwd(),"evalData",seriesName,"mapData","mapVsEpoch.pickle")
             

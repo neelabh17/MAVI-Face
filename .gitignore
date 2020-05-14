@@ -12,3 +12,5 @@ gitToken.py
 gitCred.py
 gitToken.txt
 __pycache__/
+evalData/**/outResults/
+evalData/**/results/

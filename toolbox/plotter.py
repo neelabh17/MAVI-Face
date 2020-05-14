@@ -73,7 +73,7 @@ def mapGraphPlotter(fileName,viewMode=False,saveMode=True):
     f=open(fileName,"rb")
     lossCollec=pickle.load(f)
     f.close()
-
+    print(lossCollec)
     
     ep=[]
     MAP=[]
@@ -101,7 +101,7 @@ def mapGraphPlotter(fileName,viewMode=False,saveMode=True):
 
     
     plt.plot(ep,MAP,"g")
-    plt.plot(ep,maxVal,"b",linestyle="dashed",marker="o",markevery=[ep[vl.index(min(vl))]-1])
+    plt.plot(ep,maxVal,"b",linestyle="dashed",marker="o",markevery=[MAP.index(max(MAP))])
     plt.plot(ep,refVal,"r",linestyle="dashed")
     
 
@@ -115,9 +115,9 @@ def mapGraphPlotter(fileName,viewMode=False,saveMode=True):
 
     plt.ylabel("mAP") 
     plt.title(title+":  mAP (0.5:0.05:0.95) ") 
-    plt.text(ep[len(ep)-1]*.50,(MAP[0]+MAP[len(ep)-1]-MAP[0])*0.5,"mAP (max={0:.4f} at epoch {1})".format(max(MAP),ep[MAP.index(max(MAP))]),fontsize=12,color="green")
-    plt.text(ep[len(ep)-1]*.10,(MAP[0]+MAP[len(ep)-1]-MAP[0])*0.6,"Max mAP achieved = {0:.4f}".format(max(MAP)),fontsize=12,color="blue")
-    plt.text(ep[len(ep)-1]*.10,(MAP[0]+MAP[len(ep)-1]-MAP[0])*0.7,"Pretrained reference mAP n={0:.4f}".format(min(refVal)),fontsize=12,color="red")
+    plt.text(ep[len(ep)-1]*.50,MAP[0]+(MAP[len(ep)-1]-MAP[0])*0.7,"mAP (max={0:.4f} at epoch {1})".format(max(MAP),ep[MAP.index(max(MAP))]),fontsize=12,color="green")
+    plt.text(ep[len(ep)-1]*.50,MAP[0]+(MAP[len(ep)-1]-MAP[0])*0.6,"Max mAP achieved = {0:.4f}".format(max(MAP)),fontsize=12,color="blue")
+    plt.text(ep[len(ep)-1]*.50,MAP[0]+(MAP[len(ep)-1]-MAP[0])*0.5,"Pretrained reference mAP ={0:.4f}".format(min(refVal)),fontsize=12,color="red")
     if(saveMode):
         plt.savefig(fileName.strip(".pickle")+"-graph.png")
     # plt.savefig( fileName.strip(".pickle")+"-Loss_per_image.jpg")

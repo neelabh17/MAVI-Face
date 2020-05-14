@@ -1,5 +1,6 @@
 import os
 def makeLabelPickle(fileLoc):
+    
     # fileLoc: file location to label.txt eg ./data/widerface/val/label.txt"
     file=open(fileLoc,"r")
     lines=file.readlines()
