@@ -183,10 +183,10 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
         #now saving the pickle file
         #saving in evalData folder
         if(mode=="single"):
-            modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(pretrained_path).strip(".pth"))
+            modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(pretrained_path).strip(".pth"),"outResults")
             save_name = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
         elif(mode=="series"):
-            modelEvalFolder = join(os.getcwd(),"evalData",seriesName)
+            modelEvalFolder = join(os.getcwd(),"evalData",seriesName,"outResults")
             save_name = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,epoch))
 
         
