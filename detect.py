@@ -18,10 +18,13 @@ import numpy as np
 import os
 from os.path import isfile, join
 import time
+import sys
+from os.path import isfile, join
+from toolbox.makedir import make
 
 parser = argparse.ArgumentParser(description='Retinaface')
 
-parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_epoch_28_noGrad_FT_Adam_lre3.pth',
+parser.add_argument('-m', '--trained_model', default='Resnet50_epoch_28_noGrad_FT_Adam_lre3',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
@@ -32,6 +35,8 @@ parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
 parser.add_argument('--vis_thres', default=0.055, type=float, help='visualization_threshold')
 parser.add_argument('--area_thres', default=225, type=float, help='visualization_threshold')
+parser.add_argument('--mode', default="images", type=str, help='images: for image inference, video: for video inference')
+parser.add_argument('--save_name', default="test", type=str, help='folder in which you inference will be saved in inference/outputs/<save_name>')
 args = parser.parse_args()
 
 
@@ -69,8 +74,89 @@ def load_model(model, pretrained_path, load_to_cpu):
     check_keys(model, pretrained_dict)
     model.load_state_dict(pretrained_dict, strict=False)
     return model
-import sys
-notmade=True
+
+
+def infer(net,img_raw):
+    # print(sys.getsizeof(img_raw))
+    img = np.float32(img_raw)
+
+    im_height, im_width, _ = img.shape
+    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
+    img -= (104, 117, 123)
+    img = img.transpose(2, 0, 1)
+    img = torch.from_numpy(img).unsqueeze(0)
+    img = img.to(device)
+    scale = scale.to(device)
+
+    loc, conf, landms = net(img)  # forward pass
+
+    priorbox = PriorBox(cfg, image_size=(im_height, im_width))
+    priors = priorbox.forward()
+    priors = priors.to(device)
+    prior_data = priors.data
+    boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
+    boxes = boxes * scale / resize
+    boxes = boxes.cpu().numpy()
+    scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
+    landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
+    scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+                            img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+                            img.shape[3], img.shape[2]])
+    scale1 = scale1.to(device)
+    landms = landms * scale1 / resize
+    landms = landms.cpu().numpy()
+
+    # ignore low scores
+    inds = np.where(scores > args.confidence_threshold)[0]
+    boxes = boxes[inds]
+    landms = landms[inds]
+    scores = scores[inds]
+
+    # keep top-K before NMS
+    order = scores.argsort()[::-1][:args.top_k]
+    boxes = boxes[order]
+    landms = landms[order]
+    scores = scores[order]
+
+    # do NMS
+    dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
+    keep = py_cpu_nms(dets, args.nms_threshold)
+    # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
+    dets = dets[keep, :]
+    landms = landms[keep]
+
+    # keep top-K faster NMS
+    dets = dets[:args.keep_top_k, :]
+    landms = landms[:args.keep_top_k, :]
+
+    dets = np.concatenate((dets, landms), axis=1)
+
+    #removing small face predictions
+    area_thresh=args.area_thres
+    dets=dets[np.where(np.multiply(dets[:,2],dets[:,3])>=area_thresh)[0]]
+    # show image
+    
+    for b in dets:
+        if b[4] < args.vis_thres:
+            continue
+        text = "{:.4f}".format(b[4])
+        b = list(map(int, b))
+        cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+        cx = b[0]
+        cy = b[1] + 12
+        cv2.putText(img_raw, text, (cx, cy),
+                    cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
+
+        # landms
+        cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
+        cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
+        cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
+        cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
+        cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+    
+    return img_raw
+
+
 if __name__ == '__main__':
     torch.set_grad_enabled(False)
     cfg = None
@@ -80,7 +166,8 @@ if __name__ == '__main__':
         cfg = cfg_re50
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
-    net = load_model(net, args.trained_model, args.cpu)
+    modelPath=join(os.getcwd,"weights",(args.trained_model+".pth"))
+    net = load_model(net, modelPath, args.cpu)
     net.eval()
     print('Finished loading model!')
     print(net)
@@ -89,124 +176,56 @@ if __name__ == '__main__':
     net = net.to(device)
 
     resize = 1
-    from os.path import isfile, join
-    pathIn="hnmImages"
-    files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
-    print(len(files))
-    files.sort()
-    # testing begin
-    tic2=time.time()
-    tic = time.time()
-    inferencetimer=0
+    saveName=args.save_name
+    #now loading images
+    if(args.mode=="images"):
+        pathIn=join(os.getcwd(),"inference","inputImages")
+        files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
+        print("inferning on {} image files".format(len(files)))
+        files.sort()
+        beginTime=time.time()
+        for i,file in enumerate(files):
+            print(file)
+            img_raw = cv2.imread(join(pathIn,file), cv2.IMREAD_COLOR)
+            updatedImg=infer(net,img_raw)
+            if(i%100==0):
+                print("Time taken for 100 image inference and savings= {} sec".format(time.time-beginTime))
+                beginTime=time.time()
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name)
+            make(saveFolder)
+            cv2.imwrite(join(saveFolder,file), img_raw)
 
-    filer=open("hnmlabel.txt","w")
-    for i,file in enumerate(files):
-        image_path = "hnmImages"
-        print(file)
-        img_raw = cv2.imread(image_path+"/"+file, cv2.IMREAD_COLOR)
-        
-        # print(sys.getsizeof(img_raw))
-        img = np.float32(img_raw)
+    elif(args.mode=="videos"):
+        pathIn=join(os.getcwd(),"inference","inputVideos")
+        files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
+        print("inferning on {} video files".format(len(files)))
+        for i,video in enumerate(files):
+            print(video)
 
-        im_height, im_width, _ = img.shape
-        scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-        img -= (104, 117, 123)
-        img = img.transpose(2, 0, 1)
-        img = torch.from_numpy(img).unsqueeze(0)
-        img = img.to(device)
-        scale = scale.to(device)
-
-        loc, conf, landms = net(img)  # forward pass
-        itperimage=time.time() - tic
-        inferencetimer+=itperimage
-        tic = time.time()
-
-        if(i%100==0):
-            print("At image-{}".format(i)+"\tTime taken:{}s".format(time.time()-tic2))
-            tic2=time.time()
-            print('net forward time for 100 images: {:.4f}s'.format(inferencetimer))
-            inferencetimer=0
-        priorbox = PriorBox(cfg, image_size=(im_height, im_width))
-        priors = priorbox.forward()
-        priors = priors.to(device)
-        prior_data = priors.data
-        boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
-        boxes = boxes * scale / resize
-        boxes = boxes.cpu().numpy()
-        scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
-        landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
-        scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                               img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                               img.shape[3], img.shape[2]])
-        scale1 = scale1.to(device)
-        landms = landms * scale1 / resize
-        landms = landms.cpu().numpy()
-
-        # ignore low scores
-        inds = np.where(scores > args.confidence_threshold)[0]
-        boxes = boxes[inds]
-        landms = landms[inds]
-        scores = scores[inds]
-
-        # keep top-K before NMS
-        order = scores.argsort()[::-1][:args.top_k]
-        boxes = boxes[order]
-        landms = landms[order]
-        scores = scores[order]
-
-        # do NMS
-        dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        keep = py_cpu_nms(dets, args.nms_threshold)
-        # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
-        dets = dets[keep, :]
-        landms = landms[keep]
-
-        # keep top-K faster NMS
-        dets = dets[:args.keep_top_k, :]
-        landms = landms[:args.keep_top_k, :]
-
-        dets = np.concatenate((dets, landms), axis=1)
-
-        #removing small face predictions
-        area_thresh=args.area_thres
-        dets=dets[np.where(np.multiply(dets[:,2],dets[:,3])>=area_thresh)[0]]
-        filer.write("# NJIS/{}\n".format(file))
-        # show image
-        if args.save_image:
-            for b in dets:
-                if b[4] < args.vis_thres:
-                    continue
-                text = "{:.4f}".format(b[4])
-                b = list(map(int, b))
-                cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-                cx = b[0]
-                cy = b[1] + 12
-                cv2.putText(img_raw, text, (cx, cy),
-                            cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-
-                # landms
-                cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
-                cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
-                cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
-                cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
-                cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
-                cv2.imshow('image',img_raw)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-                n=int(input())
-                if(n==1):
-                    print(file)                   
-                    print(b[:4],[-1]*16)
-                    filer.write("{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} \n".format(b[0],b[1],b[2],b[3],-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1))
-            # save image
-
+            # reading from my video
+            realvideo=cv2.VideoCapture(join(pathIn,file))
             
-            savefolder="/content/drive/My Drive/MAVI Videos/face_17_images/inference"
-            if (not os.path.isdir(savefolder) and notmade):
-                os.makedirs(savefolder)
-                notmade=False
-            cv2.imwrite(savefolder+"/{}".format(file), img_raw)
+            #setting up for new video
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name)
+            make(saveFolder)
+
+            pathOut=join(saveFolder,"video","output-{}".format(video))
+
+            # frame size (width,height)
+            size=(realvideo.get(cv2.CAP_PROP_FRAME_WIDTH),realvideo.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps=realvideo.get(cv2.CAP_PROP_FPS)
+            out=cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'),fps,size)
+            while(True):
+                ret,image_raw=realvideo.read()
+                if(ret):
+                    out.write(infer(net,img_raw))
+                else:
+                    break
+            
+            out.release()
+            
+
+    
 
 
-    filer.close()
 
