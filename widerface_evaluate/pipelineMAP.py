@@ -309,10 +309,10 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
     #load the predbbooxes dataset ground truth
     evalDataFolder=join(os.getcwd(),"evalData")
     if(seriesData is not None):
-        modelEvalFolder = join(os.getcwd(),"evalData",seriesData["seriesName"])
+        modelEvalFolder = join(os.getcwd(),"evalData",seriesData["seriesName"],"outResults")
         fileName = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,seriesData["epoch"]))
     else:
-        modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"))
+        modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"),"outResults")
         fileName = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
 
 
