@@ -14,3 +14,4 @@ gitToken.txt
 __pycache__/
 evalData/**/outResults/
 evalData/**/results/
+inference/
