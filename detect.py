@@ -166,7 +166,7 @@ if __name__ == '__main__':
         cfg = cfg_re50
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
-    modelPath=join(os.getcwd,"weights",(args.trained_model+".pth"))
+    modelPath=join(os.getcwd(),"weights",(args.trained_model+".pth"))
     net = load_model(net, modelPath, args.cpu)
     net.eval()
     print('Finished loading model!')
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             img_raw = cv2.imread(join(pathIn,file), cv2.IMREAD_COLOR)
             updatedImg=infer(net,img_raw)
             if(i%100==0):
-                print("Time taken for 100 image inference and savings= {} sec".format(time.time-beginTime))
+                print("Time taken for 100 image inference and savings= {} sec".format(time.time()-beginTime))
                 beginTime=time.time()
             saveFolder=join(os.getcwd(),"inference","output",args.save_name)
             make(saveFolder)
@@ -203,20 +203,24 @@ if __name__ == '__main__':
             print(video)
 
             # reading from my video
-            realvideo=cv2.VideoCapture(join(pathIn,file))
+            realvideo=cv2.VideoCapture(join(pathIn,video))
             
             #setting up for new video
-            saveFolder=join(os.getcwd(),"inference","output",args.save_name)
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name,"video")
             make(saveFolder)
 
-            pathOut=join(saveFolder,"video","output-{}".format(video))
-
+            pathOut=join(saveFolder,"output-{}.avi".format(video.split(".")[0]))
+            print(pathOut)
             # frame size (width,height)
-            size=(realvideo.get(cv2.CAP_PROP_FRAME_WIDTH),realvideo.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps=realvideo.get(cv2.CAP_PROP_FPS)
+            size=(int(realvideo.get(cv2.CAP_PROP_FRAME_WIDTH)),int(realvideo.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+            fps=int(realvideo.get(cv2.CAP_PROP_FPS))
             out=cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'),fps,size)
+            print("Total frames= {}".format(realvideo.get(cv2.CAP_PROP_FRAME_COUNT)))
+            counter=0
             while(True):
-                ret,image_raw=realvideo.read()
+                print(counter)
+                counter+=1
+                ret,img_raw=realvideo.read()
                 if(ret):
                     out.write(infer(net,img_raw))
                 else:
