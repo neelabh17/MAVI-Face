@@ -11,12 +11,10 @@ import tqdm
 import pickle
 import argparse
 import numpy as np
-from scipy.io import loadmat
 from IPython import embed
 import sys
 import pickle
 import numpy as np
-import matplotlib.pyplot as plt
 sys.path.append("..")
 from widerface_evaluate.bbox import bbox_overlaps
 from utils.evalResults import readData, reductionProcedures
@@ -368,10 +366,10 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
     recall = my_pr_curve[:, 1]
     my_ap=voc_ap(recall,propose)
     print("my ap is coming out to be",my_ap)
-    # if(iou_thresh==0.3):
-    #     a=open("optimise.pickle","wb")
-    #     pickle.dump(my_pr_curve,a)
-    #     a.close()
+    if(iou_thresh==0.3):
+        a=open("optimise.pickle","wb")
+        pickle.dump(my_pr_curve,a)
+        a.close()
     my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
@@ -398,8 +396,8 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
 
     return my_aps[0]
 
-def MAPCalcAfterEval(newargs,modelPath,seriesData=None):
-    args=newargs
+def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None):
+    
     if(seriesData is None):
         assert(args.mode=="single")
     
