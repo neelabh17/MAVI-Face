@@ -52,7 +52,7 @@ gpu_train = cfg['gpu_train']
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
-initial_lr = args.lr
+initial_lr = args.lr*batch_size/24
 gamma = args.gamma
 training_dataset = args.training_dataset
 validation_dataset = args.validation_dataset
@@ -87,10 +87,12 @@ for params in net.parameters():  # set all layers requires_grad to false
     params.requires_grad = False
 
 # re initialising our layers
-net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
+net.ClassHead = net._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])  
 # we can think of redcing this fpn from 5 to 3 to increase inference time by a bit
-net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
+net.BboxHead = net._make_bbox_head(fpn_num=3, inchannels=cfg['out_channel']) 
 
+# for name,params in net.named_parameters():  # set all layers requires_grad to false
+#     print(name,params.requires_grad)
 
 Plist = []
 
@@ -170,10 +172,11 @@ def train():
             # for base model
             newtic=time.time()
             print("Performing Evalaution on the dataset at epoch {}".format(epoch), end=" - ")
-            trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
-            # trainLoss=epoch_loss_train
+            # trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
+            trainLoss=epoch_loss_train
             valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
             ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
+            
             lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
             print("Done in {} secs".format(time.time()-newtic))
             

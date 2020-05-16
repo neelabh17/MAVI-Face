@@ -189,7 +189,9 @@ if __name__ == '__main__':
             img_raw = cv2.imread(join(pathIn,file), cv2.IMREAD_COLOR)
             updatedImg=infer(net,img_raw)
             if(i%100==0):
+                print("===========================================")
                 print("Time taken for 100 image inference and savings= {} sec".format(time.time()-beginTime))
+                print("===========================================")
                 beginTime=time.time()
             saveFolder=join(os.getcwd(),"inference","output",args.save_name)
             make(saveFolder)

@@ -114,7 +114,10 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
     testResults={}
     # testing begin
     for i, img_name in enumerate(neelTestDataset):
-        image_path = join(testset_folder, img_name)
+
+        #unpacking dir nase
+        directory,base=os.path.split(img_name)
+        image_path = join(testset_folder, directory,base)
         print("image path is :",image_path)
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
         img = np.float32(img_raw)
