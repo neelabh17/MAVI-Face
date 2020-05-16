@@ -87,12 +87,10 @@ for params in net.parameters():  # set all layers requires_grad to false
     params.requires_grad = False
 
 # re initialising our layers
-net.ClassHead = net._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])  
+net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
 # we can think of redcing this fpn from 5 to 3 to increase inference time by a bit
-net.BboxHead = net._make_bbox_head(fpn_num=3, inchannels=cfg['out_channel']) 
+net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
 
-# for name,params in net.named_parameters():  # set all layers requires_grad to false
-#     print(name,params.requires_grad)
 
 Plist = []
 
@@ -100,11 +98,6 @@ for params in net.parameters():  # stores parameters that will be updated in Pli
     if params.requires_grad:
         Plist.append(params)
 
-for params in net.parameters():  # set all layers requires_grad to false
-    params.requires_grad = True
-
-# for name,params in net.named_parameters():  # set all layers requires_grad to false
-#     print(name,params.requires_grad)
 
 if num_gpu > 1 and gpu_train:  # now transfer net to gpu if possible
     net = torch.nn.DataParallel(net).cuda()
@@ -123,7 +116,7 @@ with torch.no_grad():
     priors = priorbox.forward()
     priors = priors.cuda()
 
-def training():
+def train():
     net.train()
     epoch = 0 + args.resume_epoch
     trainingSessionName=input("Enter the name for this training session: ")
@@ -177,12 +170,11 @@ def training():
             
             # for base model
             newtic=time.time()
-            print("Performing Evalaution on the dataset at epoch {}".format(epoch), end=" - ")
-            # trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
-            trainLoss=epoch_loss_train
+            print("Performing Evalaution on the dataset at epoch {}".format(epoch))
+            trainLoss=train_eval(net,train_dataset_,batch_size,epoch,mode=0)
+            # trainLoss=epoch_loss_train
             valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
             ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
-            
             lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
             print("Done in {} secs".format(time.time()-newtic))
             
@@ -230,7 +222,7 @@ def training():
         if iteration % epoch_size == 0:
             print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
             
-            
+            epoch_loss_train=0
             epoch+=1
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
@@ -290,4 +282,4 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
 
 
 if __name__ == "__main__":
-    training()
+    train()
