@@ -100,6 +100,12 @@ for params in net.parameters():  # stores parameters that will be updated in Pli
     if params.requires_grad:
         Plist.append(params)
 
+for params in net.parameters():  # set all layers requires_grad to false
+    params.requires_grad = True
+
+# for name,params in net.named_parameters():  # set all layers requires_grad to false
+#     print(name,params.requires_grad)
+
 if num_gpu > 1 and gpu_train:  # now transfer net to gpu if possible
     net = torch.nn.DataParallel(net).cuda()
 else:
@@ -117,7 +123,7 @@ with torch.no_grad():
     priors = priorbox.forward()
     priors = priors.cuda()
 
-def train():
+def training():
     net.train()
     epoch = 0 + args.resume_epoch
     trainingSessionName=input("Enter the name for this training session: ")
@@ -284,4 +290,4 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
 
 
 if __name__ == "__main__":
-    train()
+    training()
