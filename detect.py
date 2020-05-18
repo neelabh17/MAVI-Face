@@ -21,6 +21,7 @@ import time
 import sys
 from os.path import isfile, join
 from toolbox.makedir import make
+from toolbox.videoMaker import imagesToVideo
 
 parser = argparse.ArgumentParser(description='Retinaface')
 
@@ -35,7 +36,9 @@ parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
 parser.add_argument('--vis_thres', default=0.055, type=float, help='visualization_threshold')
 parser.add_argument('--area_thres', default=225, type=float, help='visualization_threshold')
+parser.add_argument('--fps', default=2, type=int, help='visualization_threshold')
 parser.add_argument('--mode', default="images", type=str, help='images: for image inference, video: for video inference')
+parser.add_argument('--convert_to_video', default="False", type=str, help='Save to video')
 parser.add_argument('--save_name', default="test", type=str, help='folder in which you inference will be saved in inference/outputs/<save_name>')
 args = parser.parse_args()
 
@@ -196,6 +199,9 @@ if __name__ == '__main__':
             saveFolder=join(os.getcwd(),"inference","output",args.save_name)
             make(saveFolder)
             cv2.imwrite(join(saveFolder,file), img_raw)
+        if(args.convert_to_video=="True"):
+            imagesToVideo(saveFolder,args.save_name,args.fps)
+
 
     elif(args.mode=="videos"):
         pathIn=join(os.getcwd(),"inference","inputVideos")

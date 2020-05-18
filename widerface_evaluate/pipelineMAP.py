@@ -367,9 +367,19 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
     my_ap=voc_ap(recall,propose)
     print("my ap is coming out to be",my_ap)
     if(iou_thresh==0.3):
-        a=open("optimise.pickle","wb")
+        if(seriesData is not None):
+            prFolder=join(os.path.dirname(modelEvalFolder),"prData")
+            make(prFolder)
+            prFileName = join(prFolder,"prCurve_{}_epoch_{}.pickle".format(args.dataset,seriesData["epoch"]))
+        else:
+            prFolder=join(os.path.dirname(modelEvalFolder),"prData")
+            make(prFolder)
+            prFileName = join(prFolder,"prCurve_{}.pickle".format(args.dataset))
+
+        a=open(prFileName,"wb")
         pickle.dump(my_pr_curve,a)
         a.close()
+        print("saving pickle for optimise")
     my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
@@ -394,7 +404,7 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
     # print("Hard   Val AP: {}".format(aps[2]))
     print("=================================================")
 
-    return my_aps[0]
+    return aps[0]
 
 def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None):
     

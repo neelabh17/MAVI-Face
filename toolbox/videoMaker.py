@@ -5,7 +5,7 @@ from os.path import isfile, join
 
 def imagesToVideo(imageFolder,saveName,fps):
     pathIn= imageFolder
-    pathOut = join(imageFolder,"video",'{}.mp4'.format(saveName))
+    pathOut = join(imageFolder,"video",'{}.avi'.format(saveName))
     frame_array = []
     files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
     # for sorting the file names properly
