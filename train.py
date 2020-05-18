@@ -22,7 +22,7 @@ parser.add_argument('--network', default='resnet50', help='Backbone network mobi
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
-parser.add_argument('--resume_net', default='./weights/Resnet50_Final.pth', help='resume net for retraining')
+parser.add_argument('--resume_net', default='./weights/Resnet50_epoch_28_noGrad_FT_Adam_lre3.pth', help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0, type=int, help='resume iter for retraining')
 parser.add_argument('--save_epoch', default=2, type=int, help='after how many epoche steps should the model be saved')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
@@ -52,6 +52,7 @@ gpu_train = cfg['gpu_train']
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
+# initial_lr = args.lr
 initial_lr = args.lr*batch_size/24
 gamma = args.gamma
 training_dataset = args.training_dataset
@@ -84,12 +85,19 @@ cudnn.benchmark = True
 # okay now we want to re-initialise layers
 
 for params in net.parameters():  # set all layers requires_grad to false
+    # print(params)
     params.requires_grad = False
+for params in net.ClassHead.parameters():  # set all layers requires_grad to false
+    # print(params)
+    params.requires_grad = True
+for params in net.BboxHead.parameters():  # set all layers requires_grad to false
+    # print(params)
+    params.requires_grad = True
 
 # re initialising our layers
-net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
-# we can think of redcing this fpn from 5 to 3 to increase inference time by a bit
-net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
+# net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
+# # we can think of redcing this fpn from 5 to 3 to increase inference time by a bit
+# net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
 
 
 Plist = []
@@ -255,8 +263,10 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
     model.eval()
     loss_val = 0.0
     i=0
+    totImg=0
 
     for images_,targets_ in val_data:
+        totImg+=(images_.shape[0])
         print("{} done out of {}".format(i,len(val_data)))
         i+=1
         
@@ -269,7 +279,7 @@ def train_eval(model,val_data,batch_size_val,epoch_no,mode = 1,is_base_model=Fal
             loss = cfg['loc_weight'] * loss_l + loss_c + loss_landm
             loss_val += loss.item()
     
-    loss_val = loss_val / (batch_size * len(val_data))  # get average loss per image
+    loss_val = loss_val /(totImg)  # get average loss per image
     if(mode==0):
         # if running evaluation on training set for the pretrained model
         print('Training loss for Epoch {} : {}'.format(epoch_no,loss_val))
