@@ -28,7 +28,7 @@ cfg_re50 = {
     'clip': False,
     'loc_weight': 2.0,
     'gpu_train': True,
-    'batch_size': 16,
+    'batch_size': 32,
     'ngpu': 4,
     'epoch': 40,
     'decay1': 70,

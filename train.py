@@ -22,7 +22,7 @@ parser.add_argument('--network', default='resnet50', help='Backbone network mobi
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
-parser.add_argument('--resume_net', default='./weights/Resnet50_epoch_28_noGrad_FT_Adam_lre3.pth', help='resume net for retraining')
+parser.add_argument('--resume_net', default='./weights/Resnet50_Final.pth', help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0, type=int, help='resume iter for retraining')
 parser.add_argument('--save_epoch', default=2, type=int, help='after how many epoche steps should the model be saved')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
