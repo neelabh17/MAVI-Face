@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 import os
 from os.path import isfile, join
+from toolbox.makedir import make
 
 def imagesToVideo(imageFolder,saveName,fps):
     pathIn= imageFolder
+    make(join(imageFolder,"video"))
     pathOut = join(imageFolder,"video",'{}.avi'.format(saveName))
     frame_array = []
     files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]

@@ -9,7 +9,7 @@ def bestConf(prFilepath):
     maxr=0
     maxp=0
     confForPrecision=0
-    for data in data:
+    for data in prdata:
         # data[0]- prec
         # data[1]-recall
         # data[2]-conf core
