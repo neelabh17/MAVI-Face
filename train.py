@@ -168,6 +168,8 @@ def train():
     epoch_loss_train = 0.0
     lossCollector=[]
 
+    writer=SummaryWriter(flush_secs=30,comment=f' trainingSessionName={trainingSessionName} lr={initial_lr} batchsize={batch_size} optimiser=Adam details={traingDetails}')
+   
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
             # code called for each epoch at begin of the epoch
@@ -185,6 +187,12 @@ def train():
             valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
             ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
             lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
+            # tensorboard logging
+            writer.add_scalars("Loss per Epoch",
+                                {"Train":trainLoss,
+                                "Validation Loss": valLoss,
+                                "Ohem Loss": ohemLoss},epoch)
+            
             print("Done in {} secs".format(time.time()-newtic))
             
             #saving the losses data per epoch
@@ -230,7 +238,6 @@ def train():
         
         if iteration % epoch_size == 0:
             print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
-            
             epoch_loss_train=0
             epoch+=1
 
