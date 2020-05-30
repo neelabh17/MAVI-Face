@@ -16,3 +16,4 @@ evalData/**/outResults/
 evalData/**/results/
 inference/
 data/config.py
+runs/

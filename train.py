@@ -15,6 +15,7 @@ from models.retinaface import RetinaFace
 import pickle
 from toolbox.plotter import lossGraphPlotter
 from toolbox.makedir import make
+from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -123,7 +124,7 @@ priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
 with torch.no_grad():
     priors = priorbox.forward()
     priors = priors.cuda()
-
+    
 def train():
     net.train()
     epoch = 0 + args.resume_epoch
