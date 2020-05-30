@@ -17,3 +17,5 @@ evalData/**/results/
 inference/
 data/config.py
 runs/
+trainLogs/
+evalLogs/

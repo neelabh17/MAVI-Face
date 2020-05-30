@@ -169,7 +169,7 @@ def train():
     lossCollector=[]
 
     print("Settnig up tensorboard")
-    writer=SummaryWriter(flush_secs=30,comment=f' trainingSessionName={trainingSessionName} lr={initial_lr} batchsize={batch_size} optimiser=Adam details={traingDetails}')
+    writer=SummaryWriter(logdir="trainLogs",flush_secs=30,comment=f' trainingSessionName={trainingSessionName} lr={initial_lr} batchsize={batch_size} optimiser=Adam details={traingDetails}')
    
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
@@ -243,7 +243,7 @@ def train():
             epoch+=1
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
-    write.close()
+    writer.close()
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):
