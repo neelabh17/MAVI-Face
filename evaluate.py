@@ -216,7 +216,7 @@ if __name__ == '__main__':
         if(not os.path.isfile(save_name)):
             eval(modelPath, args.mode)
         print("Starting TensorBoard For Map plotting")
-        writer=SummaryWriter("evalLoss", comment=f'single={args.trained_model}')
+        writer=SummaryWriter("evalLoss/{}_single".format(args.trained_model))
         MAPCalcAfterEval(args,modelPath,writer=writer)
         writer.close()
     elif args.mode=="series":
@@ -239,7 +239,7 @@ if __name__ == '__main__':
         # starting the tensorboard 
 
         print("Starting TensorBoard For Map plotting")
-        writer=SummaryWriter("evalLoss", comment=f'series={seriesName}')
+        writer=SummaryWriter("evalLogs/{}_series".format(args.trained_model))
         for myModelInfo in modelsInSeries:
             epochNo, modelFile=myModelInfo
             modelPath=join(os.getcwd(),"weights",modelFile)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
             modelEvalFolder = join(os.getcwd(),"evalData",seriesName,"outResults")
             save_name = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,epochNo))
             if(not os.path.isfile(save_name)):
-                eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo,writer=writer)
+                eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo)
             
             # get map
             MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"epoch": epochNo},writer=writer)

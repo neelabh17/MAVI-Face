@@ -19,3 +19,4 @@ data/config.py
 runs/
 trainLogs/
 evalLogs/
+*__pycache__*
