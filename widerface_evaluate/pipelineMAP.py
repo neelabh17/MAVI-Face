@@ -291,7 +291,7 @@ def getGTIgnoreSet(category):
     return setList[category],len(setList[category])
 
 
-def neelEvaluation(iou_thresh,modelPath,seriesData=None):
+def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
     count_face = 0
     thresh_num = 1000
     pr_curve = np.zeros((thresh_num, 2)).astype('float')
@@ -364,6 +364,9 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
 
     propose = my_pr_curve[:, 0]
     recall = my_pr_curve[:, 1]
+    for i in range(len(recall)):
+        writer.add_scalars("prCurve",{f'iou_thresh={iou_thresh}':propose[i]},recall[i])
+    writer.flush()
     my_ap=voc_ap(recall,propose)
     print("my ap is coming out to be",my_ap)
     if(iou_thresh==0.3):
@@ -406,7 +409,7 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None):
 
     return aps[0]
 
-def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None):
+def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None,writer=None):
     
     if(seriesData is None):
         assert(args.mode=="single")
@@ -433,7 +436,7 @@ def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None):
 
     iouVsAP=[]
     for i in ious:
-        iouVsAP.append([i,neelEvaluation(i,modelPath,seriesData)])
+        iouVsAP.append([i,neelEvaluation(i,modelPath,seriesData,writer=writer)])
     mAP_025=0
     mAP_05=0
 
@@ -467,7 +470,7 @@ def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None):
     else:
         save(iouVsAP,join(mapFolder,"results.pickle"))
 
-    return mAP_05/10
+    return mAP_05/10, 
 
 if __name__ == '__main__':
 

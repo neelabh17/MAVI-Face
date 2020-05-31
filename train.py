@@ -168,8 +168,8 @@ def train():
     epoch_loss_train = 0.0
     lossCollector=[]
 
-    print("Settnig up tensorboard")
-    writer=SummaryWriter(logdir="trainLogs",flush_secs=30,comment=f' trainingSessionName={trainingSessionName} lr={initial_lr} batchsize={batch_size} optimiser=Adam details={traingDetails}')
+    print("Setting up tensorboard")
+    writer=SummaryWriter(logdir="trainLogs",flush_secs=120,comment=f' mode={args.mode} trained_model={args.trained_model}')
    
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
