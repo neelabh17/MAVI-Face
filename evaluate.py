@@ -20,6 +20,8 @@ import cv2
 from os.path import join
 from widerface_evaluate.pipelineMAP import MAPCalcAfterEval
 from toolbox.plotter import mapGraphPlotter
+from torch.utils.tensorboard import SummaryWriter
+
 
 parser = argparser = argparse.ArgumentParser(description='Retinaface')
 parser.add_argument('-m', '--trained_model', default='Resnet50_Final',
@@ -209,8 +211,14 @@ if __name__ == '__main__':
     if args.mode=="single":
         modelFile=args.trained_model+".pth"
         modelPath=join(os.getcwd(),"weights",modelFile)
-        eval(modelPath, args.mode)
-        MAPCalcAfterEval(args,modelPath)
+        modelEvalFolder = join(os.getcwd(),"evalData",args.trained_model,"outResults")
+        save_name = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
+        if(not os.path.isfile(save_name)):
+            eval(modelPath, args.mode)
+        print("Starting TensorBoard For Map plotting")
+        writer=SummaryWriter("evalLoss/{}_single".format(args.trained_model))
+        MAPCalcAfterEval(args,modelPath,writer=writer)
+        writer.close()
     elif args.mode=="series":
         seriesName=args.trained_model
         
@@ -227,15 +235,24 @@ if __name__ == '__main__':
         #sorting them in order of epoch
         modelsInSeries.sort(key=lambda x:x[0])
         mapData=[]
+
+        # starting the tensorboard 
+
+        print("Starting TensorBoard For Map plotting")
+        writer=SummaryWriter("evalLogs/{}_series".format(args.trained_model))
         for myModelInfo in modelsInSeries:
             epochNo, modelFile=myModelInfo
             modelPath=join(os.getcwd(),"weights",modelFile)
 
             # evaluate results
-            eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo)
+            modelEvalFolder = join(os.getcwd(),"evalData",seriesName,"outResults")
+            save_name = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,epochNo))
+            if(not os.path.isfile(save_name)):
+                eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo)
             
             # get map
-            MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"epoch": epochNo})
+            MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"epoch": epochNo},writer=writer)
+            writer.add_scalar("Iou Vs Epoch",MAP,epochNo)
             mapData.append({"epoch":epochNo,"map":MAP})
             mapDataSaverfile=join(os.getcwd(),"evalData",seriesName,"mapData","mapVsEpoch.pickle")
             
@@ -247,6 +264,8 @@ if __name__ == '__main__':
             
             # plot graph
             mapGraphPlotter(mapDataSaverfile)
+        writer.flush()
+        writer.close()
 
     else:
         print("Select correct mode")

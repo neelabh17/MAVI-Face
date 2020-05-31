@@ -15,6 +15,7 @@ from models.retinaface import RetinaFace
 import pickle
 from toolbox.plotter import lossGraphPlotter
 from toolbox.makedir import make
+from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -123,7 +124,7 @@ priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
 with torch.no_grad():
     priors = priorbox.forward()
     priors = priors.cuda()
-
+    
 def train():
     net.train()
     epoch = 0 + args.resume_epoch
@@ -167,6 +168,9 @@ def train():
     epoch_loss_train = 0.0
     lossCollector=[]
 
+    print("Setting up tensorboard")
+    writer=SummaryWriter(logdir="trainLogs",flush_secs=120,comment=f' mode={args.mode} trained_model={args.trained_model}')
+   
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
             # code called for each epoch at begin of the epoch
@@ -184,6 +188,12 @@ def train():
             valLoss=train_eval(net,dataset_,batch_size,epoch,mode=1)
             ohemLoss = train_eval(net,ohem_data_,batch_size,epoch,mode=2)
             lossCollector.append({"epoch":epoch,"trainLoss":trainLoss,"valLoss":valLoss,"ohemLoss":ohemLoss})
+            # tensorboard logging
+            writer.add_scalars("Loss per Epoch",
+                                {"Train":trainLoss,
+                                "Validation Loss": valLoss,
+                                "Ohem Loss": ohemLoss},epoch)
+            
             print("Done in {} secs".format(time.time()-newtic))
             
             #saving the losses data per epoch
@@ -229,11 +239,11 @@ def train():
         
         if iteration % epoch_size == 0:
             print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
-            
             epoch_loss_train=0
             epoch+=1
 
     torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
+    writer.close()
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):

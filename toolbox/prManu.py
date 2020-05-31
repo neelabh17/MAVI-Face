@@ -1,6 +1,6 @@
 from toolbox.pickleOpers import loadup
 
-def bestConf(prFilepath):
+def bestConf(prFilepath,atleastP=0.8,atleastR=0.8):
     prdata=loadup(prFilepath)
 
     maxF1=0
@@ -16,17 +16,17 @@ def bestConf(prFilepath):
         p,r,c=data
         if(p>0.8 and r>0.8):
             if(p>maxp):
-                confForPrecision=c
+                confForPrecision=data
                 maxp=p
             if(r>maxr):
-                confForRecall=c
+                confForRecall=data
                 maxr=r
         
         f1=2*r*p/(r+p)
         if(f1>maxF1):
             maxF1=f1
-            confForF1=c
+            confForF1=data
 
-    print("For max recall conf= {}".format(confForRecall))
-    print("For max precision conf= {}".format(confForPrecision))
-    print("For max f1 conf= {}".format(confForF1))
+    print("For max recall conf\n[precision,recall,conf]\n {}\n-------------".format(confForRecall))
+    print("For max precision conf\n[precision,recall,conf]\n {}\n-------------".format(confForPrecision))
+    print("For max f1 conf\n[precision,recall,conf]\n {}\n-------------".format(confForF1))
