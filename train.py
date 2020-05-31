@@ -29,6 +29,8 @@ parser.add_argument('--save_epoch', default=2, type=int, help='after how many ep
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
+parser.add_argument('--shuffle', default='True', help='Location to save checkpoint models')
+parser.add_argument('--lr_scheduler', default='False', help='Location to save checkpoint models')
 
 parser.add_argument('--validation_dataset', default='./data/widerface/val/label.txt', help='Validation dataset directory')
 
@@ -49,7 +51,8 @@ num_gpu = cfg['ngpu']
 batch_size = cfg['batch_size']
 max_epoch = cfg['epoch']
 gpu_train = cfg['gpu_train']
-
+if(args.shuffle=="True"):
+    toShuffle=True
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
@@ -144,15 +147,15 @@ def train():
 
     print('Loading Train Dataset...')
     train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
-    train_dataset_ = data.DataLoader(train_dataset,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
+    train_dataset_ = data.DataLoader(train_dataset,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading Val Dataset...')
     val_data = WiderFaceDetection(validation_dataset,preproc(img_dim, rgb_mean))
-    dataset_ = data.DataLoader(val_data,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
+    dataset_ = data.DataLoader(val_data,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading OHEM data...')
     ohem_data = WiderFaceDetection(ohem_dataset,preproc(img_dim, rgb_mean))
-    ohem_data_ = data.DataLoader(ohem_data,batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate)
+    ohem_data_ = data.DataLoader(ohem_data,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     epoch_size = math.ceil(len(train_dataset) / batch_size)
     max_iter = max_epoch * epoch_size
@@ -175,7 +178,7 @@ def train():
         if iteration % epoch_size == 0:
             # code called for each epoch at begin of the epoch
             # create batch iterator
-            batch_iterator = iter(data.DataLoader(train_dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
+            batch_iterator = iter(data.DataLoader(train_dataset, batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate))
             if (epoch % save_epoch == 0 and epoch > 0) :
                 # code doest run for the zeroth epoch
                 torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
