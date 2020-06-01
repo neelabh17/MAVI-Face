@@ -172,7 +172,7 @@ def train():
     lossCollector=[]
 
     print("Setting up tensorboard")
-    writer=SummaryWriter(logdir="trainLogs/{}".format(args.trained_model),flush_secs=120,comment=f' mode={args.mode} trained_model={args.trained_model}')
+    writer=SummaryWriter("trainLogs/{}".format(trainingSessionName),flush_secs=120)
    
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:

@@ -366,9 +366,9 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
     recall = my_pr_curve[:, 1]
     for i in range(len(recall)):
         if(seriesData is not None):
-            writer.add_scalars("prCurve"),{f'epoch={seriesData["epoch"]} iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            writer.add_scalars("prCurve",{f'epoch={seriesData["epoch"]} iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
         else:
-            writer.add_scalars("prCurve"),{f'iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            writer.add_scalars("prCurve",{f'iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
 
     writer.flush()
     my_ap=voc_ap(recall,propose)
