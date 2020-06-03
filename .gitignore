@@ -15,9 +15,9 @@ __pycache__/
 evalData/**/outResults/
 evalData/**/results/
 inference/
-# data/config.py
+data/config.py
 runs/
 trainLogs/
 evalLogs/
 *__pycache__*
-# *config.py
+*config.py
