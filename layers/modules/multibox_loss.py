@@ -53,7 +53,7 @@ class MultiBoxLoss(nn.Module):
             ground_truth (tensor): Ground truth boxes and labels for a batch,
                 shape: [batch_size,num_objs,5] (last idx is the label).
         """
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         loc_data, conf_data, landm_data = predictions
         priors = priors
         num = loc_data.size(0)
@@ -73,7 +73,7 @@ class MultiBoxLoss(nn.Module):
             loc_t = loc_t.cuda()
             conf_t = conf_t.cuda()
             landm_t = landm_t.cuda()
-
+        # import pdb;pdb.set_trace()
         zeros = torch.tensor(0).cuda()
         # landm Loss (Smooth L1)
         # Shape: [batch,num_priors,10]
