@@ -161,7 +161,6 @@ def train():
     f.write(traingDetails)
     f.close()
 
-
     print('Loading Train Dataset...')
     train_dataset = ohemDataSampler( training_dataset,preproc(img_dim, rgb_mean))
     # train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
