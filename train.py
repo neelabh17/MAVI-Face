@@ -30,7 +30,7 @@ parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight dec
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
 parser.add_argument('--shuffle', default='False', help='Location to save checkpoint models')
-# parser.add_argument('--lr_scheduler', default='False', help='Location to save checkpoint models')
+parser.add_argument('--lr_scheduler', default='False', help='Do you want to use the LR Scheduler?')
 parser.add_argument('--lr_scheduler_epsilon', default=1e-3, type=float, help='Weight decay for SGD')
 
 parser.add_argument('--validation_dataset', default='./data/widerface/val/label.txt', help='Validation dataset directory')
@@ -56,6 +56,10 @@ if(args.shuffle=="True"):
     toShuffle=True
 else:
     toShuffle=False
+if(args.lr_scheduler=="True"):
+    useScheduler=True
+else:
+    useScheduler=False
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
@@ -128,12 +132,13 @@ else:
 # optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
 optimizer = optim.Adam(Plist, lr=initial_lr, weight_decay=weight_decay)
 criterion = MultiBoxLoss(num_classes, 0.35, True, 0, True, 7, 0.35, False)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer,
-    patience=3,
-    factor=.3,
-    threshold=args.lr_scheduler_epsilon,
-    verbose=True)
+if(useScheduler):
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        patience=3,
+        factor=.3,
+        threshold=args.lr_scheduler_epsilon,
+        verbose=True)
 # print(net)
 
 priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
@@ -148,7 +153,10 @@ def train():
     
     # removing any extra spaces from the input
     trainingSessionName=trainingSessionName.strip()
-    trainingSessionName=f'{trainingSessionName}_lr-beg={initial_lr:.1e}_lr-sch={args.lr_scheduler_epsilon:.0e}_shuffle={toShuffle}'
+    if(useScheduler):
+        trainingSessionName=f'{trainingSessionName}_lr-beg={initial_lr:.1e}_lr-sch={args.lr_scheduler_epsilon:.0e}_shuffle={toShuffle}'
+    else:
+        trainingSessionName=f'{trainingSessionName}_lr-beg={initial_lr:.1e}_lr-sch=None_shuffle={toShuffle}'
     traingDetails=input("Enter details for the training : ")
 
     pwd=os.getcwd()
@@ -160,7 +168,7 @@ def train():
     f=open(os.path.join(sessionPath,"details.txt"),"w")
     f.write(traingDetails)
     f.close()
-
+    
     print('Loading Train Dataset...')
     train_dataset = ohemDataSampler( training_dataset,preproc(img_dim, rgb_mean))
     # train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
@@ -215,8 +223,8 @@ def train():
             if (epoch % save_epoch == 0 and epoch > 0) :
                 # code doest run for the zeroth epoch
                 torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
-            
-            scheduler.step(trainLoss)
+            if(useScheduler):
+                scheduler.step(trainLoss)
             lr = optimizer.param_groups[0]['lr']
             writer.add_scalar("Learning Rate",lr,epoch)
             print("Done in {} secs".format(time.time()-newtic))

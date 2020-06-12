@@ -22,6 +22,7 @@ import pickle
 from data.compare_img import saveImages
 from toolbox.makedir import make
 from toolbox.pickleOpers import save,loadup
+from toolbox.prManu import bestConf
 
 
 
@@ -307,10 +308,10 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
     #load the predbbooxes dataset ground truth
     evalDataFolder=join(os.getcwd(),"evalData")
     if(seriesData is not None):
-        modelEvalFolder = join(os.getcwd(),"evalData",seriesData["seriesName"],"outResults")
+        modelEvalFolder = join(os.getcwd(),"evalData",seriesData["seriesName"]+f"_inferConf={args.confidence_threshold_infer}","outResults")
         fileName = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,seriesData["epoch"]))
     else:
-        modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"),"outResults")
+        modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth")+f"_inferConf={args.confidence_threshold_infer}","outResults")
         fileName = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
 
 
@@ -366,9 +367,11 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
     recall = my_pr_curve[:, 1]
     for i in range(len(recall)):
         if(seriesData is not None):
-            writer.add_scalars("prCurve",{f'epoch={seriesData["epoch"]} iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            # writer.add_scalars("prCurve",{f'epoch={seriesData["epoch"]} iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            pass
         else:
-            writer.add_scalars("prCurve",{f'iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            # writer.add_scalars("prCurve",{f'iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            pass
 
     writer.flush()
     my_ap=voc_ap(recall,propose)
@@ -387,6 +390,16 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
         pickle.dump(my_pr_curve,a)
         a.close()
         print("saving pickle for optimise")
+        mr,mp,mf=bestConf(prFileName)
+        if(seriesData is not None):
+            writer.add_text("Max Recall",mr,seriesData["epoch"])
+            writer.add_text("Max Precision",mp,seriesData["epoch"])
+            writer.add_text("Max F1 Score",mf,seriesData["epoch"])
+        else:
+            writer.add_text("Max Recall",mr,1)
+            writer.add_text("Max Precision",mp,1)
+            writer.add_text("Max F1 Score",mf,1)
+        writer.flush()
     my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
@@ -413,15 +426,15 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
 
     return aps[0]
 
-def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None,writer=None):
+def MAPCalcAfterEval(args=newargs ,modelPath=None,seriesData=None,writer=None):
     
     if(seriesData is None):
         assert(args.mode=="single")
     
     if(seriesData is not None):
-        evalModelFolder=join(os.getcwd(),"evalData",seriesData["seriesName"])
+        evalModelFolder=join(os.getcwd(),"evalData",seriesData["seriesName"]+f"_inferConf={args.confidence_threshold_infer}")
     else:
-        evalModelFolder=join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth"))
+        evalModelFolder=join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth")+f"_inferConf={args.confidence_threshold_infer}")
 
     if(args.save_image=="True"):
         model_name=os.path.basename(modelPath).strip(".pth")

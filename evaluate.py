@@ -34,7 +34,7 @@ parser.add_argument('--dataset', default='val', type=str, help="on which dataset
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images', type=str, help='dataset path')
 parser.add_argument('--confidence_threshold_eval', default=0.03, type=float, help='confidence_threshold_eval')
-parser.add_argument('--confidence_threshold_infer', default=0.055, type=float, help='confidence_threshold_infer')
+parser.add_argument('--confidence_threshold_infer', default=0.50, type=float, help='confidence_threshold_infer')
 parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -211,12 +211,12 @@ if __name__ == '__main__':
     if args.mode=="single":
         modelFile=args.trained_model+".pth"
         modelPath=join(os.getcwd(),"weights",modelFile)
-        modelEvalFolder = join(os.getcwd(),"evalData",args.trained_model,"outResults")
+        modelEvalFolder = join(os.getcwd(),"evalData",args.trained_model+f"_inferConf={args.confidence_threshold_infer}","outResults")
         save_name = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
         if(not os.path.isfile(save_name)):
             eval(modelPath, args.mode)
         print("Starting TensorBoard For Map plotting")
-        writer=SummaryWriter("evalLoss/{}_single".format(args.trained_model))
+        writer=SummaryWriter("evalLogs/{}_single_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
         MAPCalcAfterEval(args,modelPath,writer=writer)
         writer.close()
     elif args.mode=="series":
@@ -239,13 +239,13 @@ if __name__ == '__main__':
         # starting the tensorboard 
 
         print("Starting TensorBoard For Map plotting")
-        writer=SummaryWriter("evalLogs/{}_series".format(args.trained_model))
+        writer=SummaryWriter("evalLogs/{}_series_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
         for myModelInfo in modelsInSeries:
             epochNo, modelFile=myModelInfo
             modelPath=join(os.getcwd(),"weights",modelFile)
 
             # evaluate results
-            modelEvalFolder = join(os.getcwd(),"evalData",seriesName,"outResults")
+            modelEvalFolder = join(os.getcwd(),"evalData",seriesName+f"_inferConf={args.confidence_threshold_infer}","outResults")
             save_name = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,epochNo))
             if(not os.path.isfile(save_name)):
                 eval(modelPath, args.mode,seriesName=seriesName,epoch=epochNo)
@@ -254,7 +254,7 @@ if __name__ == '__main__':
             MAP=MAPCalcAfterEval(args,modelPath,seriesData={"seriesName":seriesName,"epoch": epochNo},writer=writer)
             writer.add_scalar("Iou Vs Epoch",MAP,epochNo)
             mapData.append({"epoch":epochNo,"map":MAP})
-            mapDataSaverfile=join(os.getcwd(),"evalData",seriesName,"mapData","mapVsEpoch.pickle")
+            mapDataSaverfile=join(os.getcwd(),"evalData",seriesName+f"_inferConf={args.confidence_threshold_infer}","mapData","mapVsEpoch.pickle")
             
             # create directory
             make(os.path.dirname(mapDataSaverfile))

@@ -58,7 +58,7 @@ class MultiBoxLoss(nn.Module):
         priors = priors
         num = loc_data.size(0)
         num_priors = (priors.size(0))
-
+        
         # match priors (default boxes) and ground truth boxes
         loc_t = torch.Tensor(num, num_priors, 4)
         landm_t = torch.Tensor(num, num_priors, 10)

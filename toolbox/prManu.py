@@ -14,7 +14,7 @@ def bestConf(prFilepath,atleastP=0.8,atleastR=0.8):
         # data[1]-recall
         # data[2]-conf core
         p,r,c=data
-        if(p>0.8 and r>0.8):
+        if(p>atleastP and r>atleastR):
             if(p>maxp):
                 confForPrecision=data
                 maxp=p
@@ -30,3 +30,8 @@ def bestConf(prFilepath,atleastP=0.8,atleastR=0.8):
     print("For max recall conf\n[precision,recall,conf]\n {}\n-------------".format(confForRecall))
     print("For max precision conf\n[precision,recall,conf]\n {}\n-------------".format(confForPrecision))
     print("For max f1 conf\n[precision,recall,conf]\n {}\n-------------".format(confForF1))
+    a="[precision,recall,conf]\n {}\n-------------".format(confForRecall)
+    b="[precision,recall,conf]\n {}\n-------------".format(confForPrecision)
+    c="[precision,recall,conf]\n {}\n-------------".format(confForF1)
+
+    return a,b,c
