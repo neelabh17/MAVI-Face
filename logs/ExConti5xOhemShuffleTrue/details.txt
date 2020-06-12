@@ -1,1 +1,0 @@
-ExConti5xOhemShuffleTrue Resnet50_epoch_28_noGrad_FT_Adam_lre3

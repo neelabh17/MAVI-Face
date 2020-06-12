@@ -5,7 +5,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import argparse
 import torch.utils.data as data
-from data import WiderFaceDetection, detection_collate, preproc, cfg_mnet, cfg_re50
+from data import WiderFaceDetection, detection_collate, preproc, cfg_mnet, cfg_re50,ohemDataSampler
 from layers.modules import MultiBoxLoss
 from layers.functions.prior_box import PriorBox
 import time
@@ -18,19 +18,20 @@ from toolbox.makedir import make
 from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
-parser.add_argument('--training_dataset', default='./data/widerface/ohem/label.txt', help='Training dataset directory')
+parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
-parser.add_argument('--resume_net', default='./weights/Resnet50_epoch_28_noGrad_FT_Adam_lre3.pth', help='resume net for retraining')
+parser.add_argument('--resume_net', default='./weights/Resnet50_Final.pth', help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0, type=int, help='resume iter for retraining')
 parser.add_argument('--save_epoch', default=2, type=int, help='after how many epoche steps should the model be saved')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
-parser.add_argument('--shuffle', default='True', help='Location to save checkpoint models')
-parser.add_argument('--lr_scheduler', default='False', help='Location to save checkpoint models')
+parser.add_argument('--shuffle', default='False', help='Location to save checkpoint models')
+parser.add_argument('--lr_scheduler', default='False', help='Do you want to use the LR Scheduler?')
+parser.add_argument('--lr_scheduler_epsilon', default=1e-3, type=float, help='Weight decay for SGD')
 
 parser.add_argument('--validation_dataset', default='./data/widerface/val/label.txt', help='Validation dataset directory')
 
@@ -53,6 +54,12 @@ max_epoch = cfg['epoch']
 gpu_train = cfg['gpu_train']
 if(args.shuffle=="True"):
     toShuffle=True
+else:
+    toShuffle=False
+if(args.lr_scheduler=="True"):
+    useScheduler=True
+else:
+    useScheduler=False
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
@@ -69,7 +76,7 @@ ohem_dataset = './data/widerface/ohem/label.txt'
 net = RetinaFace(cfg=cfg)
 
 # Updating model params before it is loaded
-net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
+# net.BboxHead = net._make_bbox_head(fpn_num=5, inchannels=cfg['out_channel']) 
 # net.ClassHead = net._make_class_head(fpn_num=5, inchannels=cfg['out_channel'])  
 # import pdb;pdb.set_trace()
 
@@ -121,11 +128,17 @@ if num_gpu > 1 and gpu_train:  # now transfer net to gpu if possible
 else:
     net = net.cuda()
 
-
+# TODO change weight decay
 # optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
 optimizer = optim.Adam(Plist, lr=initial_lr, weight_decay=weight_decay)
 criterion = MultiBoxLoss(num_classes, 0.35, True, 0, True, 7, 0.35, False)
-
+if(useScheduler):
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        patience=3,
+        factor=.3,
+        threshold=args.lr_scheduler_epsilon,
+        verbose=True)
 # print(net)
 
 priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
@@ -137,6 +150,13 @@ def train():
     net.train()
     epoch = 0 + args.resume_epoch
     trainingSessionName=input("Enter the name for this training session: ")
+    
+    # removing any extra spaces from the input
+    trainingSessionName=trainingSessionName.strip()
+    if(useScheduler):
+        trainingSessionName=f'{trainingSessionName}_lr-beg={initial_lr:.1e}_lr-sch={args.lr_scheduler_epsilon:.0e}_shuffle={toShuffle}'
+    else:
+        trainingSessionName=f'{trainingSessionName}_lr-beg={initial_lr:.1e}_lr-sch=None_shuffle={toShuffle}'
     traingDetails=input("Enter details for the training : ")
 
     pwd=os.getcwd()
@@ -148,17 +168,19 @@ def train():
     f=open(os.path.join(sessionPath,"details.txt"),"w")
     f.write(traingDetails)
     f.close()
-
-
+    
     print('Loading Train Dataset...')
-    train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
+    train_dataset = ohemDataSampler( training_dataset,preproc(img_dim, rgb_mean))
+    # train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
     train_dataset_ = data.DataLoader(train_dataset,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading Val Dataset...')
+    # val_data = ohemDataSampler(validation_dataset,preproc(img_dim, rgb_mean))
     val_data = WiderFaceDetection(validation_dataset,preproc(img_dim, rgb_mean))
     dataset_ = data.DataLoader(val_data,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading OHEM data...')
+    # ohem_data = ohemDataSampler(ohem_dataset,preproc(img_dim, rgb_mean))
     ohem_data = WiderFaceDetection(ohem_dataset,preproc(img_dim, rgb_mean))
     ohem_data_ = data.DataLoader(ohem_data,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
@@ -184,10 +206,6 @@ def train():
             # code called for each epoch at begin of the epoch
             # create batch iterator
             batch_iterator = iter(data.DataLoader(train_dataset, batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate))
-            if (epoch % save_epoch == 0 and epoch > 0) :
-                # code doest run for the zeroth epoch
-                torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
-            
             # for base model
             newtic=time.time()
             print("Performing Evalaution on the dataset at epoch {}".format(epoch))
@@ -202,6 +220,13 @@ def train():
                                 "Validation Loss": valLoss,
                                 "Ohem Loss": ohemLoss},epoch)
             
+            if (epoch % save_epoch == 0 and epoch > 0) :
+                # code doest run for the zeroth epoch
+                torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
+            if(useScheduler):
+                scheduler.step(trainLoss)
+            lr = optimizer.param_groups[0]['lr']
+            writer.add_scalar("Learning Rate",lr,epoch)
             print("Done in {} secs".format(time.time()-newtic))
             
             #saving the losses data per epoch
@@ -221,7 +246,9 @@ def train():
         load_t0 = time.time()
         if iteration in stepvalues:
             step_index += 1
-        lr = adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size)
+        # lr = adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size)
+        lr = optimizer.param_groups[0]['lr']
+        
         # load train data
         images, targets = next(batch_iterator)
         images = images.cuda()
@@ -244,13 +271,17 @@ def train():
               .format(epoch, max_epoch, (iteration % epoch_size) + 1,
               epoch_size, iteration + 1, max_iter, loss_l.item(), loss_c.item(), loss_landm.item(), lr, batch_time, str(datetime.timedelta(seconds=eta))))
         
-        
+        # TODO add this training data to tensorboard
         if iteration % epoch_size == 0:
-            print('Training loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
+            print('\nTraining loss for Epoch simultaneous wala {} : {}'.format(epoch,epoch_loss_train))
+            writer.add_scalar("Simultaneous Train Loss per Epoch",epoch_loss_train,epoch)
+            # writer.flush()
             epoch_loss_train=0
             epoch+=1
 
-    torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
+    # TODO save last file correctly
+    torch.save(net.state_dict(), save_folder + trainingSessionName+"_epoch_{}.pth".format(int(epoch)))
+    # torch.save(net.state_dict(), save_folder + cfg['name'] + '_Finally_FT_Adam_WC1.pth')
     writer.close()
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
 

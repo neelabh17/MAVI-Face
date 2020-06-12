@@ -21,3 +21,7 @@ trainLogs/
 evalLogs/
 *__pycache__*
 # *config.py
+
+oldevalData/
+oldevalLogs/
+oldlogs/
