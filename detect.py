@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser(description='Retinaface')
 parser.add_argument('-m', '--trained_model', default='Resnet50_epoch_28_noGrad_FT_Adam_lre3',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
-parser.add_argument('--cpu', action="store_true", default=True, help='Use cpu inference')
+parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--confidence_threshold', default=0.055, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -203,7 +203,7 @@ if __name__ == '__main__':
             imagesToVideo(saveFolder,args.save_name,args.fps)
 
 
-    elif(args.mode=="videos"):
+    elif(args.mode=="video"):
         pathIn=join(os.getcwd(),"inference","inputVideos")
         files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
         print("inferning on {} video files".format(len(files)))
@@ -214,14 +214,15 @@ if __name__ == '__main__':
             realvideo=cv2.VideoCapture(join(pathIn,video))
             
             #setting up for new video
-            saveFolder=join(os.getcwd(),"inference","output",args.save_name,"video")
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name+f"_visConf={args.vis_thres}","video")
             make(saveFolder)
 
             pathOut=join(saveFolder,"output-{}.avi".format(video.split(".")[0]))
             print(pathOut)
             # frame size (width,height)
             size=(int(realvideo.get(cv2.CAP_PROP_FRAME_WIDTH)),int(realvideo.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-            fps=int(realvideo.get(cv2.CAP_PROP_FPS))
+            fps=1
+            # fps=int(realvideo.get(cv2.CAP_PROP_FPS))
             out=cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'),fps,size)
             print("Total frames= {}".format(realvideo.get(cv2.CAP_PROP_FRAME_COUNT)))
             counter=0

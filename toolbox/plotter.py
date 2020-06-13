@@ -127,3 +127,38 @@ def mapGraphPlotter(fileName,viewMode=False,saveMode=True):
     # function to show the plot 
     if(viewMode):
         plt.show() 
+
+
+def prPlotter(fileName):    
+    f=open(fileName,"rb")
+    pr_curve=pickle.load(f)
+    f.close()
+
+    propose = pr_curve[:, 0]
+    recall = pr_curve[:, 1]
+
+    # print(len(ep),len(vl))
+    plt.clf()
+    plt.rcParams["figure.figsize"] = (15,10)
+    # for x in a:
+    #     # plotting the points
+
+    plt.plot(recall,propose,"r") #x,y
+    plt.plot(0.8,0.8,"bo")
+
+    # naming the x axis 
+    plt.xlabel('Recall',fontsize=15,color="green") 
+    # naming the y axis 
+        
+    # giving a title to my graph 
+
+    plt.ylabel("Precision",fontsize=15,color="green") 
+    plt.title(0.3) 
+    plt.text(recall[len(recall)-1],propose[len(propose)-1],0.3,fontsize=12,color="green")
+
+    save_folder=os.path.join(os.path.dirname(fileName),"graphs")
+    if not os.path.exists(save_folder):
+        os.mkdir(save_folder)
+    plt.savefig(os.path.join(save_folder,os.path.basename(fileName).replace(".pickle",".png")))
+    # function to show the plot 
+    # plt.show() 
