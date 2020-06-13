@@ -23,6 +23,7 @@ from data.compare_img import saveImages
 from toolbox.makedir import make
 from toolbox.pickleOpers import save,loadup
 from toolbox.prManu import bestConf
+from toolbox.plotter import prPlotter
 
 
 
@@ -389,6 +390,10 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
         a=open(prFileName,"wb")
         pickle.dump(my_pr_curve,a)
         a.close()
+        # saving manual plots
+        prPlotter(prFileName)
+
+
         print("saving pickle for optimise")
         mr,mp,mf=bestConf(prFileName)
         if(seriesData is not None):
@@ -426,19 +431,19 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
 
     return aps[0]
 
-def MAPCalcAfterEval(args=newargs ,modelPath=None,seriesData=None,writer=None):
-    
+def MAPCalcAfterEval(newargs=args ,modelPath=None,seriesData=None,writer=None):
+    print(f'The infer confidence is ={args.confidence_threshold_infer}')
     if(seriesData is None):
-        assert(args.mode=="single")
+        assert(newargs.mode=="single")
     
     if(seriesData is not None):
-        evalModelFolder=join(os.getcwd(),"evalData",seriesData["seriesName"]+f"_inferConf={args.confidence_threshold_infer}")
+        evalModelFolder=join(os.getcwd(),"evalData",seriesData["seriesName"]+f"_inferConf={newargs.confidence_threshold_infer}")
     else:
-        evalModelFolder=join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth")+f"_inferConf={args.confidence_threshold_infer}")
+        evalModelFolder=join(os.getcwd(),"evalData",os.path.basename(modelPath).strip(".pth")+f"_inferConf={newargs.confidence_threshold_infer}")
 
-    if(args.save_image=="True"):
+    if(newargs.save_image=="True"):
         model_name=os.path.basename(modelPath).strip(".pth")
-        saveImages(model_name,args.nms_threshold,args.confidence_threshold_infer,args.dataset,args.savename,args.area_threshold,args.merge_images)
+        saveImages(model_name,newargs.nms_threshold,newargs.confidence_threshold_infer,newargs.dataset,newargs.savename,newargs.area_threshold,newargs.merge_images)
         # n=int(input("Want to continue?"))
         # if(n==0):
         #     exit()

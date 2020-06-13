@@ -34,7 +34,7 @@ parser.add_argument('--dataset', default='val', type=str, help="on which dataset
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
 parser.add_argument('--dataset_folder', default='./data/widerface/val/images', type=str, help='dataset path')
 parser.add_argument('--confidence_threshold_eval', default=0.03, type=float, help='confidence_threshold_eval')
-parser.add_argument('--confidence_threshold_infer', default=0.50, type=float, help='confidence_threshold_infer')
+parser.add_argument('--confidence_threshold_infer', default=0.055, type=float, help='confidence_threshold_infer')
 parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
@@ -188,10 +188,10 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
         #now saving the pickle file
         #saving in evalData folder
         if(mode=="single"):
-            modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(pretrained_path).strip(".pth"),"outResults")
+            modelEvalFolder = join(os.getcwd(),"evalData",os.path.basename(pretrained_path).strip(".pth")+f"_inferConf={args.confidence_threshold_infer}","outResults")
             save_name = join(modelEvalFolder,"outResults_{}.pickle".format(args.dataset))
         elif(mode=="series"):
-            modelEvalFolder = join(os.getcwd(),"evalData",seriesName,"outResults")
+            modelEvalFolder = join(os.getcwd(),"evalData",seriesName+f"_inferConf={args.confidence_threshold_infer}","outResults")
             save_name = join(modelEvalFolder,"outResults_{}_epoch_{}.pickle".format(args.dataset,epoch))
 
         
@@ -217,7 +217,8 @@ if __name__ == '__main__':
             eval(modelPath, args.mode)
         print("Starting TensorBoard For Map plotting")
         writer=SummaryWriter("evalLogs/{}_single_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
-        MAPCalcAfterEval(args,modelPath,writer=writer)
+        MAP=MAPCalcAfterEval(args,modelPath,writer=writer)
+        writer.add_scalar("Iou Vs Epoch",MAP,1)
         writer.close()
     elif args.mode=="series":
         seriesName=args.trained_model

@@ -18,18 +18,18 @@ from toolbox.makedir import make
 from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
-parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
+parser.add_argument('--training_dataset', default='./data/widerface/ohem/label.txt', help='Training dataset directory')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
-parser.add_argument('--resume_net', default='./weights/Resnet50_Final.pth', help='resume net for retraining')
+parser.add_argument('--resume_net', default='./weights/SingleSamplingOhemAdamLRe3_epoch_32.pth', help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0, type=int, help='resume iter for retraining')
-parser.add_argument('--save_epoch', default=2, type=int, help='after how many epoche steps should the model be saved')
+parser.add_argument('--save_epoch', default=1, type=int, help='after how many epoche steps should the model be saved')
 parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
-parser.add_argument('--shuffle', default='False', help='Location to save checkpoint models')
+parser.add_argument('--shuffle', default='True', help='Location to save checkpoint models')
 parser.add_argument('--lr_scheduler', default='False', help='Do you want to use the LR Scheduler?')
 parser.add_argument('--lr_scheduler_epsilon', default=1e-3, type=float, help='Weight decay for SGD')
 
@@ -170,8 +170,8 @@ def train():
     f.close()
     
     print('Loading Train Dataset...')
-    train_dataset = ohemDataSampler( training_dataset,preproc(img_dim, rgb_mean))
-    # train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
+    # train_dataset = ohemDataSampler( training_dataset,preproc(img_dim, rgb_mean))
+    train_dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
     train_dataset_ = data.DataLoader(train_dataset,batch_size, shuffle=toShuffle, num_workers=num_workers, collate_fn=detection_collate)
 
     print('Loading Val Dataset...')
