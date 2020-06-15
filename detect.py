@@ -196,14 +196,14 @@ if __name__ == '__main__':
                 print("Time taken for 100 image inference and savings= {} sec".format(time.time()-beginTime))
                 print("===========================================")
                 beginTime=time.time()
-            saveFolder=join(os.getcwd(),"inference","output",args.save_name)
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name,f"visConf={args.vis_thres}")
             make(saveFolder)
             cv2.imwrite(join(saveFolder,file), img_raw)
         if(args.convert_to_video=="True"):
             imagesToVideo(saveFolder,args.save_name,args.fps)
 
 
-    elif(args.mode=="video"):
+    elif(args.mode=="videos"):
         pathIn=join(os.getcwd(),"inference","inputVideos")
         files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
         print("inferning on {} video files".format(len(files)))
@@ -214,14 +214,14 @@ if __name__ == '__main__':
             realvideo=cv2.VideoCapture(join(pathIn,video))
             
             #setting up for new video
-            saveFolder=join(os.getcwd(),"inference","output",args.save_name+f"_visConf={args.vis_thres}","video")
+            saveFolder=join(os.getcwd(),"inference","output",args.save_name,f"visConf={args.vis_thres}","video")
             make(saveFolder)
+            fps=args.fps
 
-            pathOut=join(saveFolder,"output-{}.avi".format(video.split(".")[0]))
+            pathOut=join(saveFolder,"output-{}_fps={}.avi".format(video.split(".")[0],fps))
             print(pathOut)
             # frame size (width,height)
             size=(int(realvideo.get(cv2.CAP_PROP_FRAME_WIDTH)),int(realvideo.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-            fps=1
             # fps=int(realvideo.get(cv2.CAP_PROP_FPS))
             out=cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'),fps,size)
             print("Total frames= {}".format(realvideo.get(cv2.CAP_PROP_FRAME_COUNT)))

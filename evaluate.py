@@ -218,7 +218,8 @@ if __name__ == '__main__':
         print("Starting TensorBoard For Map plotting")
         writer=SummaryWriter("evalLogs/{}_single_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
         MAP=MAPCalcAfterEval(args,modelPath,writer=writer)
-        writer.add_scalar("Iou Vs Epoch",MAP,1)
+        for i in range(39):
+            writer.add_scalar("Iou Vs Epoch",MAP,i+1)
         writer.close()
     elif args.mode=="series":
         seriesName=args.trained_model
