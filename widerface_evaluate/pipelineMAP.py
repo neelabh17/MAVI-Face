@@ -404,7 +404,7 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
             writer.add_text("Max Recall",mr,1)
             writer.add_text("Max Precision",mp,1)
             writer.add_text("Max F1 Score",mf,1)
-        writer.flush()
+        # writer.flush()
     my_aps.append(my_ap)
     #correctnig the nan values that may have arrived due to division by zero
     for xe in pr_curve:
