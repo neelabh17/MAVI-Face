@@ -21,10 +21,11 @@ from os.path import join
 from widerface_evaluate.pipelineMAP import MAPCalcAfterEval
 from toolbox.plotter import mapGraphPlotter
 from torch.utils.tensorboard import SummaryWriter
+from openvino.inference_engine import IENetwork, IEPlugin, IECore
 
 
 parser = argparser = argparse.ArgumentParser(description='Retinaface')
-parser.add_argument('-m', '--trained_model', default='Resnet50_Final',
+parser.add_argument('-m', '--trained_model', default='Vino',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
 parser.add_argument('--origin_size', default=True, type=str, help='Whether use origin image size to evaluate')
@@ -91,14 +92,19 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
     elif args.network == "resnet50":
         cfg = cfg_re50
     # net and model
-    net = RetinaFace(cfg=cfg, phase = 'test')
-    net = load_model(net, pretrained_path, args.cpu)
-    net.eval()
-    print('Finished loading model!')
-    print(net)
-    cudnn.benchmark = True
+    # net = RetinaFace(cfg=cfg, phase = 'test')
+    # net = load_model(net, pretrained_path, args.cpu)
+    # net.eval()
+    # print('Finished loading model!')
+    # print(net)
+    # cudnn.benchmark = True
+    # TODO
     device = torch.device("cpu" if args.cpu else "cuda")
-    net = net.to(device)
+    # net = net.to(device)
+    ie = IECore()
+    net = ie.read_network(model = 'IR_Model/retina_MAVI.xml', weights = 'IR_Model/retina_MAVI.bin')
+    exec_net = ie.load_network(network=net, device_name="MYRIAD", num_requests = 0)
+    net.batch_size = 1
 
     # testset_folder = basically this is "./data/widerface/val/images/"
     testset_folder= args.dataset_folder
@@ -148,7 +154,13 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
         scale = scale.to(device)
 
         _t['forward_pass'].tic()
-        loc, conf, landms = net(img)  # forward pass
+        # loc, conf, landms = net(img)  # forward pass
+        exec_net.requests[0].async_infer({'input0': img})
+        request_status = exec_net.requests[0].wait()
+        conf = exec_net.requests[0].outputs['Softmax_319']
+        loc = exec_net.requests[0].outputs['Concat_293']
+        # print(conf.shape, loc.shape)
+        # print(loc.data.shape)
         _t['forward_pass'].toc()
         _t['misc'].tic()
         priorbox = PriorBox(cfg, image_size=(im_height, im_width))
@@ -159,25 +171,26 @@ def eval(pretrained_path, mode=args.mode,seriesName=None,epoch=None):
         boxes = boxes * scale / resize
         boxes = boxes.cpu().numpy()
         scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
-        landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
-        scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                            img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                            img.shape[3], img.shape[2]])
-        scale1 = scale1.to(device)
-        landms = landms * scale1 / resize
-        landms = landms.cpu().numpy()
+        # landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
+        # scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+        #                     img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+        #                     img.shape[3], img.shape[2]])
+        # scale1 = scale1.to(device)
+        # landms = landms * scale1 / resize
+        # landms = landms.cpu().numpy()
 
         # print(boxes.shape,landms.shape,scores.shape)
         # helps in significant reduction of saving space
         inds = np.where(scores > args.confidence_threshold_eval)[0]
         boxes = boxes[inds]
-        landms = landms[inds]
+        # landms = landms[inds]
         scores = scores[inds]
             
         ##here boxes are giving us the real values x1,y1,x2,y2 we have to converet them into x1,y1,w,h
         boxes[..., 2]-=boxes[..., 0]
         boxes[..., 3]-=boxes[..., 1]
         
+        landms=None
         imgResultDict={"conf":scores,"landms":landms,"loc":boxes}
         # adding it to the main results pickle file
 
