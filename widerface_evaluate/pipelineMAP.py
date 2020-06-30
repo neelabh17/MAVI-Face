@@ -369,32 +369,33 @@ def neelEvaluation(iou_thresh,modelPath,seriesData=None,writer=None):
     for i in range(len(recall)):
         if(seriesData is not None):
             # writer.add_scalars("prCurve",{f'epoch={seriesData["epoch"]} iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            writer.add_scalars(f"prCurve/iou_thresh={iou_thresh}",{f'epoch={seriesData["epoch"]} ':propose[i]},recall[i]*1000)
             pass
         else:
-            # writer.add_scalars("prCurve",{f'iou_thresh={iou_thresh}':propose[i]},recall[i]*1000)
+            writer.add_scalars(f"prCurve/iou_thresh={iou_thresh}",{'epoch=1':propose[i]},recall[i]*1000)
             pass
 
     writer.flush()
     my_ap=voc_ap(recall,propose)
     print("my ap is coming out to be",my_ap)
+    if(seriesData is not None):
+        prFolder=join(os.path.dirname(modelEvalFolder),"prData")
+        make(prFolder)
+        prFileName = join(prFolder,"prCurve{}_{}_epoch_{}.pickle".format(int(iou_thresh*100),args.dataset,seriesData["epoch"]))
+    else:
+        prFolder=join(os.path.dirname(modelEvalFolder),"prData")
+        make(prFolder)
+        prFileName = join(prFolder,"prCurve{}_{}.pickle".format(int(iou_thresh*100),args.dataset))
+
+    a=open(prFileName,"wb")
+    pickle.dump(my_pr_curve,a)
+    a.close()
+    # saving manual plots
+    # prPlotter(prFileName)
+
+
+    print("saving pickle for optimise")
     if(iou_thresh==0.3):
-        if(seriesData is not None):
-            prFolder=join(os.path.dirname(modelEvalFolder),"prData")
-            make(prFolder)
-            prFileName = join(prFolder,"prCurve_{}_epoch_{}.pickle".format(args.dataset,seriesData["epoch"]))
-        else:
-            prFolder=join(os.path.dirname(modelEvalFolder),"prData")
-            make(prFolder)
-            prFileName = join(prFolder,"prCurve_{}.pickle".format(args.dataset))
-
-        a=open(prFileName,"wb")
-        pickle.dump(my_pr_curve,a)
-        a.close()
-        # saving manual plots
-        prPlotter(prFileName)
-
-
-        print("saving pickle for optimise")
         mr,mp,mf=bestConf(prFileName)
         if(seriesData is not None):
             writer.add_text("Max Recall",mr,seriesData["epoch"])

@@ -31,7 +31,7 @@ parser.add_argument('--network', default='resnet50', help='Backbone network mobi
 parser.add_argument('--cpu', action="store_true", default=True, help='Use cpu inference')
 parser.add_argument('--confidence_threshold', default=0.055, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
-parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
+parser.add_argument('--nms_threshold', default=0.1, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
 parser.add_argument('--vis_thres', default=0.055, type=float, help='visualization_threshold')
@@ -136,28 +136,10 @@ def infer(net,img_raw):
 
     #removing small face predictions
     area_thresh=args.area_thres
-    dets=dets[np.where(np.multiply(dets[:,2],dets[:,3])>=area_thresh)[0]]
+    dets=dets[np.where(np.multiply(dets[:,2]-dets[:,0],dets[:,3]-dets[:,1])>=area_thresh)[0]]
     # show image
     return dets
-    # for b in dets:
-    #     if b[4] < args.vis_thres:
-    #         continue
-    #     text = "{:.4f}".format(b[4])
-    #     b = list(map(int, b))
-    #     cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-    #     cx = b[0]
-    #     cy = b[1] + 12
-    #     cv2.putText(img_raw, text, (cx, cy),
-    #                 cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-
-    #     # landms
-    #     cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
-    #     cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
-    #     cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
-    #     cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
-    #     cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
     
-    # return img_raw
 
 
 
@@ -168,15 +150,19 @@ if args.network == "mobile0.25":
 elif args.network == "resnet50":
     cfg = cfg_re50
 # net and model
-net = RetinaFace(cfg=cfg, phase = 'test')
-modelPath=join(os.getcwd(),"weights",(args.trained_model+".pth"))
-net = load_model(net, modelPath, args.cpu)
-net.eval()
-print('Finished loading model!')
-print(net)
-cudnn.benchmark = True
 device = torch.device("cpu" if args.cpu else "cuda")
-net = net.to(device)
+def getNet(modelName):
+    net = RetinaFace(cfg=cfg, phase = 'test')
+    modelPath=join(os.getcwd(),"weights",(modelName+".pth"))
+    # print(args.cpu)
+    # input()
+    net = load_model(net, modelPath, args.cpu)
+    net.eval()
+    print('Finished loading model!')
+    print(net)
+    cudnn.benchmark = True
+    net = net.to(device)
+    return net
 
 resize = 1
 saveName=args.save_name

@@ -36,14 +36,14 @@ parser.add_argument('--dataset_folder', default='./data/widerface/val/images', t
 parser.add_argument('--confidence_threshold_eval', default=0.03, type=float, help='confidence_threshold_eval')
 parser.add_argument('--confidence_threshold_infer', default=0.055, type=float, help='confidence_threshold_infer')
 parser.add_argument('--area_threshold', default=225, type=float, help='area threshold to remove small faces')
-parser.add_argument('--top_k', default=2, type=int, help='top_k')
+parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
 parser.add_argument('-s', '--save_image', default="False",type=str, help='show detection results')
 parser.add_argument('--merge_images', default="False",type=str, help='show detection results')
-parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
-parser.add_argument('--mode', default='single', type=str, help='single: eval on single model, series: evaluate on training session comes with in built graph plotter, single from series')
-# parser.add_argument('--epoch', default="2", type=str, help='For  single from series')
+parser.add_argument('--vis_thresldjghlxfgjxfh', default=0.5, type=float, help='visualization_threshold')
+# parser.add_argument('--mode', default='single', type=str, help='single: eval on single model, series: evaluate on training session comes with in built graph plotter, single from series')
+parser.add_argument('--epoch', default='single', type=str, help='single: eval on single model, series: evaluate on training session comes with in built graph plotter, single from series')
 
 args = parser.parse_args()
 
@@ -217,7 +217,7 @@ if __name__ == '__main__':
         if(not os.path.isfile(save_name)):
             eval(modelPath, args.mode)
         print("Starting TensorBoard For Map plotting")
-        writer=SummaryWriter("evalLogsnew/{}_single_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
+        writer=SummaryWriter("evalLogs/{}_single_inferConf={}".format(args.trained_model,args.confidence_threshold_infer))
         MAP=MAPCalcAfterEval(args,modelPath,writer=writer)
         for i in range(39):
             writer.add_scalar("Iou Vs Epoch",MAP,i+1)
@@ -271,7 +271,7 @@ if __name__ == '__main__':
         writer.close()
     elif args.mode=="singleFromSeries":
         seriesName=args.trained_model
-        epoch=int(args.top_k)
+        epoch=int(args.epoch)
         # get list of all models trained in that series
         dirPath=join(os.getcwd(),"weights")
         modelList=os.listdir(dirPath)
@@ -279,7 +279,7 @@ if __name__ == '__main__':
         for model in modelList:
             if(seriesName in model):
                 epochNumber=int(model.strip(".pth").split("_epoch_")[1])
-                if(epochNumber==epoch):
+                if(epochNo==epoch):
                     modelsInSeries.append([epochNumber,model])
 
         # my required models are stacked up
